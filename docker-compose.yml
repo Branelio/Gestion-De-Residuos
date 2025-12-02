@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: latacunga-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=mongodb
+      - DB_PORT=27017
+      - DB_NAME=latacunga_db
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - mongodb
+    networks:
+      - latacunga-network
+    restart: unless-stopped
+
+  # Frontend Web App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: latacunga-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - latacunga-network
+    restart: unless-stopped
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: latacunga-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=latacunga2025
+      - MONGO_INITDB_DATABASE=latacunga_db
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - latacunga-network
+    restart: unless-stopped
+
+networks:
+  latacunga-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:

@@ -1,0 +1,98 @@
+@startuml Arquitectura Lógica - Sistema de Gestión de Residuos Latacunga
+
+!define RECTANGLE class
+
+' Capa de Presentación
+package "Presentación" {
+  [App Móvil\nReact Native + Expo] as Mobile
+  [Interfaz Web\nReact + Vite] as Web
+}
+
+' Capa de Aplicación
+package "Capa de Aplicación" {
+  [API REST\nExpress + TypeScript] as API
+  [Controladores] as Controllers
+  [Casos de Uso] as UseCases
+}
+
+' Capa de Dominio
+package "Capa de Dominio" {
+  [Entidades] as Entities
+  [Servicios de Dominio] as DomainServices
+  [Repositorios\n(Interfaces)] as RepoInterfaces
+}
+
+' Capa de Infraestructura
+package "Infraestructura" {
+  [Repositorios MongoDB] as MongoRepos
+  [Servicios Externos] as ExternalServices
+  [Configuración] as Config
+}
+
+' Capa de Datos
+package "Persistencia" {
+  database "MongoDB Atlas" as MongoDB {
+    [Puntos de Acopio]
+    [Usuarios]
+    [Reportes]
+  }
+}
+
+' Servicios Externos
+cloud "Servicios Externos" {
+  [OSRM API\nRutas] as OSRM
+  [Expo Location\nGeolocalización] as Location
+  [JWT Auth\nAutenticación] as JWT
+}
+
+' Relaciones - Presentación
+Mobile --> API : HTTP/REST
+Web --> API : HTTP/REST
+
+' Relaciones - API
+API --> Controllers
+Controllers --> UseCases
+
+' Relaciones - Dominio
+UseCases --> Entities
+UseCases --> DomainServices
+UseCases --> RepoInterfaces
+
+' Relaciones - Infraestructura
+RepoInterfaces <|.. MongoRepos : implementa
+MongoRepos --> MongoDB
+DomainServices --> ExternalServices
+
+' Relaciones - Servicios Externos
+ExternalServices --> OSRM
+Mobile --> Location
+API --> JWT
+
+note right of API
+  Puerto: 3000
+  Base URL: /api
+  Autenticación: JWT
+end note
+
+note right of MongoDB
+  Cloud: MongoDB Atlas
+  DB: latacunga_waste_management
+  Colecciones:
+  - collection_points (22)
+  - users (15)
+  - waste_reports
+end note
+
+note left of Mobile
+  Plataformas:
+  - Android
+  - iOS
+  
+  Funcionalidades:
+  - Login/Registro
+  - Mapa interactivo
+  - Reportes
+  - Perfil
+end note
+
+@enduml

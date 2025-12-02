@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Latacunga Limpia",
+    "slug": "latacunga-limpia-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1B5E20"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ec.gob.latacunga.limpia"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1B5E20"
+      },
+      "package": "ec.gob.latacunga.limpia",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiUrl": "http://localhost:3000"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permite a $(PRODUCT_NAME) acceder a tu ubicación para encontrar puntos de acopio cercanos."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permite a $(PRODUCT_NAME) usar la cámara para reportar residuos."
+        }
+      ]
+    ]
+  }
+}

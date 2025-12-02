@@ -1,0 +1,56 @@
+@startuml Diagrama de Despliegue
+
+node "Dispositivo Móvil" {
+  [App React Native\nExpo Go] as MobileApp
+}
+
+node "Navegador Web" {
+  [Aplicación Web\nReact] as WebApp
+}
+
+node "Servidor Backend" {
+  [Node.js + Express\nPuerto 3000] as Backend
+}
+
+cloud "MongoDB Atlas" {
+  database "latacunga_waste_management" as DB
+}
+
+cloud "OSRM API" {
+  [Servicio de Rutas] as OSRM
+}
+
+cloud "Expo Services" {
+  [Location Services] as Location
+}
+
+' Conexiones
+MobileApp --> Backend : HTTPS\n192.168.0.147:3000
+WebApp --> Backend : HTTPS\nlocalhost:3000
+Backend --> DB : MongoDB Protocol\nAtlas Connection
+Backend --> OSRM : HTTPS\nrouter.project-osrm.org
+MobileApp --> Location : GPS/Network
+
+note right of Backend
+  Tecnologías:
+  - Node.js v24.11.0
+  - TypeScript 5.3.3
+  - Express 4.18.2
+  - Mongoose
+  - JWT
+end note
+
+note right of DB
+  Cluster: latacunga-cluster
+  Región: Cloud
+  Collections: 3
+  Documents: 37+
+end note
+
+note left of MobileApp
+  Framework: Expo SDK 51.0.0
+  React Native 0.74.0
+  Metro Bundler: 8081
+end note
+
+@enduml

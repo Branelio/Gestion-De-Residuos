@@ -1,0 +1,55 @@
+@startuml Arquitectura en Capas - DDD
+
+' Presentación
+rectangle "Capa de Presentación" #LightBlue {
+  rectangle "Mobile App\n(React Native + Expo)" as Mobile
+  rectangle "Web App\n(React + Vite)" as Web
+}
+
+' API
+rectangle "Capa de API" #LightGreen {
+  rectangle "Express Routes\n/api/auth\n/api/collection-points\n/api/routes\n/api/waste-reports" as Routes
+  rectangle "Controllers\nAuthController\nCollectionPointController\nRouteOptimizationController\nWasteReportController" as Controllers
+  rectangle "Middlewares\nJWT Validation\nError Handler" as Middleware
+}
+
+' Aplicación
+rectangle "Capa de Aplicación" #LightYellow {
+  rectangle "Use Cases\nCreateWasteReport\nFindNearestCollectionPoint\nOptimizeCollectionRoute\nLogin/Register" as UseCases
+  rectangle "DTOs\nRequest/Response" as DTOs
+}
+
+' Dominio
+rectangle "Capa de Dominio" #LightCoral {
+  rectangle "Entities\nUser\nCollectionPoint\nWasteReport\nCollectionRoute\nCitizen" as Entities
+  rectangle "Domain Services\nGeolocationService\nRouteOptimizationService\nUserDomainService" as DomainServices
+  rectangle "Repository Interfaces\nIUserRepository\nICollectionPointRepository\nIWasteReportRepository" as RepoInterfaces
+}
+
+' Infraestructura
+rectangle "Capa de Infraestructura" #LightGray {
+  rectangle "MongoDB Repositories\nMongoUserRepository\nMongoCollectionPointRepository\nMongoWasteReportRepository" as MongoRepos
+  rectangle "Models\nUserModel\nCollectionPointModel\nWasteReportModel" as Models
+  rectangle "External Services\nOSRM API Client\nBcrypt\nJWT" as External
+}
+
+' Persistencia
+rectangle "Capa de Persistencia" #White {
+  database "MongoDB Atlas\ncollection_points: 22\nusers: 15\nwaste_reports: N" as DB
+}
+
+' Relaciones verticales
+Mobile -down-> Routes
+Web -down-> Routes
+Routes -down-> Controllers
+Controllers -down-> UseCases
+Controllers -down-> Middleware
+UseCases -down-> Entities
+UseCases -down-> DomainServices
+UseCases -down-> RepoInterfaces
+RepoInterfaces -down-> MongoRepos
+MongoRepos -down-> Models
+Models -down-> DB
+DomainServices -down-> External
+
+@enduml

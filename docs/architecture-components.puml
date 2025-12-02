@@ -1,0 +1,58 @@
+@startuml Diagrama de Componentes - Sistema de Gestión de Residuos
+
+' Frontend Mobile
+package "Frontend Mobile" {
+  component [Screens] as Screens
+  component [Services] as Services
+  component [Theme] as Theme
+  
+  Screens --> Services
+  Screens --> Theme
+}
+
+' Backend API
+package "Backend API" {
+  component [HTTP Routes] as Routes
+  component [Controllers] as Controllers
+  component [Use Cases] as UseCases
+  component [Entities] as Entities
+  component [Repositories] as Repos
+  
+  Routes --> Controllers
+  Controllers --> UseCases
+  UseCases --> Entities
+  UseCases --> Repos
+}
+
+' Infraestructura
+package "Infraestructura" {
+  component [MongoDB Models] as Models
+  component [Mongo Repositories] as MongoRepos
+  component [External Services] as External
+  
+  MongoRepos --> Models
+  Repos <|.. MongoRepos
+}
+
+' Base de Datos
+database "MongoDB Atlas" {
+  [collection_points]
+  [users]
+  [waste_reports]
+}
+
+' Servicios Externos
+cloud "APIs Externas" {
+  [OSRM Routing API]
+  [Expo Location]
+  [JWT Token Service]
+}
+
+' Conexiones
+Services --> Routes : HTTP/REST
+MongoRepos --> MongoDB
+External --> [OSRM Routing API]
+Screens --> [Expo Location]
+Routes --> [JWT Token Service]
+
+@enduml

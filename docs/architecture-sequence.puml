@@ -1,0 +1,48 @@
+@startuml Secuencia de Login y Consulta de Puntos
+
+actor Usuario as User
+participant "Mobile App" as App
+participant "API Gateway" as API
+participant "AuthController" as Auth
+participant "UserRepository" as UserRepo
+participant "MongoDB" as DB
+participant "JWT Service" as JWT
+
+== Autenticación ==
+User -> App: Ingresa email y password
+App -> API: POST /api/auth/login\n{email, password}
+API -> Auth: login(credentials)
+Auth -> UserRepo: findByEmailWithPassword(email)
+UserRepo -> DB: findOne({email})
+DB --> UserRepo: userData + hashedPassword
+UserRepo --> Auth: {user, password}
+Auth -> Auth: bcrypt.compare(password, hash)
+Auth -> JWT: sign({userId, email, role})
+JWT --> Auth: token (30 días)
+Auth --> API: {token, user}
+API --> App: 200 OK\n{token, user}
+App -> App: AsyncStorage.setItem('authToken')
+App --> User: Navegar a Home
+
+== Consultar Puntos Cercanos ==
+User -> App: Ver Mapa
+App -> App: Obtener ubicación GPS
+App -> API: GET /api/collection-points/nearby\n?lat=-0.9346&lng=-78.6156&radius=5
+API -> Auth: Verificar token (opcional)
+API -> UserRepo: getNearby(coords, radius)
+UserRepo -> DB: aggregate(geoNear)
+DB --> UserRepo: collectionPoints[]
+UserRepo --> API: points[]
+API --> App: 200 OK\n{data: points[], count: N}
+App -> App: Renderizar marcadores
+App --> User: Mostrar mapa con puntos
+
+== Calcular Ruta ==
+User -> App: Seleccionar punto
+App -> App: getRoute(origin, destination, mode)
+App -> API: OSRM API\nrouter.project-osrm.org/route/v1/foot/...
+API --> App: {route, distance, duration}
+App -> App: Dibujar polyline en mapa
+App --> User: Mostrar ruta y distancia
+
+@enduml
