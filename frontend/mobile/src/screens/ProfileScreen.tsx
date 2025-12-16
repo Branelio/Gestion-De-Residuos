@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert
+  Alert,
+  ActivityIndicator,
+  RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
+import { wasteReportService, WasteReport } from '../services/wasteReportService';
 
 interface ProfileScreenProps {
   navigation: any;
@@ -43,6 +46,8 @@ interface Reward {
 }
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
+  const userId = 1; // TODO: Obtener del contexto de autenticación
+  
   // Mock data - TODO: Integrar con API
   const [user] = useState<UserProfile>({
     name: 'Usuario Demo',
@@ -54,11 +59,117 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     rank: 'Ciudadano Activo'
   });
 
-  const [reports] = useState<Report[]>([
-    { id: '1', type: 'Contenedor Lleno', date: '15 Ene', status: 'RESOLVED', points: 10 },
-    { id: '2', type: 'Basurero Clandestino', date: '12 Ene', status: 'IN_PROGRESS', points: 15 },
-    { id: '3', type: 'Contenedor Dañado', date: '08 Ene', status: 'RESOLVED', points: 10 }
-  ]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [realReports, setRealReports] = useState<WasteReport[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [stats, setStats] = useState({
+    total: 0,
+    resolved: 0,
+    inProgress: 0,
+    pending: 0
+  });
+
+  // Cargar reportes reales al montar el componente
+  useEffect(() => {
+    loadUserReports();
+  }, []);
+
+  // Cargar reportes del usuario desde la API
+  const loadUserReports = async () => {
+    try {
+      setIsLoading(true);
+      console.log('📥 Cargando reportes del usuario desde API...');
+      
+      const userReports = await wasteReportService.getUserReports(userId);
+      setRealReports(userReports);
+      
+      // Convertir a formato Report para el componente
+      const convertedReports: Report[] = userReports.slice(0, 3).map(report => ({
+        id: report.id.toString(),
+        type: formatReportType(report.type),
+        date: formatDateShort(report.createdAt),
+        status: mapStatusToReportStatus(report.status),
+        points: calculatePoints(report.severity)
+      }));
+      setReports(convertedReports);
+      
+      // Calcular estadísticas
+      const resolved = userReports.filter(r => r.status === 'RESUELTA').length;
+      const inProgress = userReports.filter(r => r.status === 'EN_PROCESO').length;
+      const pending = userReports.filter(r => r.status === 'PENDIENTE').length;
+      
+      setStats({
+        total: userReports.length,
+        resolved,
+        inProgress,
+        pending
+      });
+      
+      // Actualizar puntos del usuario basado en reportes
+      const totalPoints = userReports.reduce((sum, report) => {
+        return sum + (report.status === 'RESUELTA' ? calculatePoints(report.severity) : 0);
+      }, 0);
+      
+      user.points = totalPoints;
+      user.reportsCount = userReports.length;
+      
+      console.log('✅ Reportes cargados:', userReports.length);
+    } catch (error: any) {
+      console.error('❌ Error cargando reportes:', error);
+      // Si falla, usar datos de ejemplo
+      setReports([
+        { id: '1', type: 'Contenedor Lleno', date: '15 Ene', status: 'RESOLVED', points: 10 },
+        { id: '2', type: 'Basurero Clandestino', date: '12 Ene', status: 'IN_PROGRESS', points: 15 },
+        { id: '3', type: 'Contenedor Dañado', date: '08 Ene', status: 'RESOLVED', points: 10 }
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Refrescar reportes
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    await loadUserReports();
+    setIsRefreshing(false);
+  };
+
+  // Formatear tipo de reporte
+  const formatReportType = (type: string): string => {
+    const typeMap: Record<string, string> = {
+      'CONTENEDOR_LLENO': 'Contenedor Lleno',
+      'BASURA_ESPARCIDA': 'Basurero Ilegal',
+      'PUNTO_CRITICO': 'Punto Crítico',
+      'FALTA_RECOLECCION': 'Recolección Perdida',
+      'RESIDUO_PELIGROSO': 'Residuo Peligroso',
+      'OTRO': 'Otro'
+    };
+    return typeMap[type] || type;
+  };
+
+  // Formatear fecha corta
+  const formatDateShort = (dateString: string): string => {
+    const date = new Date(dateString);
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return `${date.getDate()} ${months[date.getMonth()]}`;
+  };
+
+  // Mapear estado de la API al formato del componente
+  const mapStatusToReportStatus = (status: string): Report['status'] => {
+    const statusMap: Record<string, Report['status']> = {
+      'PENDIENTE': 'PENDING',
+      'EN_PROCESO': 'IN_PROGRESS',
+      'RESUELTA': 'RESOLVED',
+      'RECHAZADA': 'PENDING'
+    };
+    return statusMap[status] || 'PENDING';
+  };
+
+  // Calcular puntos basado en gravedad
+  const calculatePoints = (severity: number): number => {
+    return severity * 5; // 5 puntos por nivel de gravedad
+  };
 
   const [rewards] = useState<Reward[]>([
     {
@@ -180,7 +291,18 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -223,28 +345,47 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>📋 Reportes Recientes</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('MyReports')}>
               <Text style={styles.seeAllText}>Ver Todos</Text>
             </TouchableOpacity>
           </View>
-          {reports.map((report) => (
-            <View key={report.id} style={styles.reportCard}>
-              <View style={styles.reportHeader}>
-                <View style={styles.reportInfo}>
-                  <Text style={styles.reportType}>{report.type}</Text>
-                  <Text style={styles.reportDate}>{report.date}</Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(report.status)}20` }]}>
-                  <Text style={[styles.statusText, { color: getStatusColor(report.status) }]}>
-                    {getStatusText(report.status)}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.reportFooter}>
-                <Text style={styles.reportPoints}>+{report.points} puntos</Text>
-              </View>
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <Text style={styles.loadingText}>Cargando reportes...</Text>
             </View>
-          ))}
+          ) : reports.length === 0 ? (
+            <View style={styles.emptyReports}>
+              <Text style={styles.emptyReportsText}>
+                No tienes reportes aún. ¡Crea tu primer reporte!
+              </Text>
+              <TouchableOpacity 
+                style={styles.createReportButton}
+                onPress={() => navigation.navigate('Report')}
+              >
+                <Text style={styles.createReportButtonText}>➕ Crear Reporte</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            reports.map((report) => (
+              <View key={report.id} style={styles.reportCard}>
+                <View style={styles.reportHeader}>
+                  <View style={styles.reportInfo}>
+                    <Text style={styles.reportType}>{report.type}</Text>
+                    <Text style={styles.reportDate}>{report.date}</Text>
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(report.status)}20` }]}>
+                    <Text style={[styles.statusText, { color: getStatusColor(report.status) }]}>
+                      {getStatusText(report.status)}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.reportFooter}>
+                  <Text style={styles.reportPoints}>+{report.points} puntos</Text>
+                </View>
+              </View>
+            ))
+          )}
         </View>
 
         {/* Rewards Section */}
@@ -482,6 +623,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: theme.colors.primary[600]
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
+    gap: theme.spacing.sm
+  },
+  loadingText: {
+    fontSize: 14,
+    color: theme.colors.neutral[600]
+  },
+  emptyReports: {
+    alignItems: 'center',
+    padding: theme.spacing.xl,
+    backgroundColor: theme.colors.neutral[50],
+    borderRadius: 12,
+    marginTop: theme.spacing.sm
+  },
+  emptyReportsText: {
+    fontSize: 14,
+    color: theme.colors.neutral[600],
+    textAlign: 'center',
+    marginBottom: theme.spacing.md
+  },
+  createReportButton: {
+    backgroundColor: theme.colors.primary[600],
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: 8
+  },
+  createReportButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600'
   },
   reportCard: {
     backgroundColor: theme.colors.neutral[50],

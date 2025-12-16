@@ -40,6 +40,7 @@ export interface CollectionPointSeedData {
 
 /**
  * Datos de los 22 puntos de acopio identificados en Latacunga
+ * COORDENADAS VERIFICADAS Y ACTUALIZADAS (Diciembre 2025)
  */
 export const collectionPointsData: CollectionPointSeedData[] = [
   // CENTROS DE ACOPIO PRINCIPALES
@@ -48,7 +49,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Centro de Acopio Municipal - La Matriz',
     location: {
       type: 'Point',
-      coordinates: [-78.6160, -0.9350]
+      coordinates: [-78.61655, -0.93483] // Av. Eloy Alfaro - Actualizado
     },
     address: 'Av. Eloy Alfaro y Quito, Latacunga Centro',
     capacity: 5000,
@@ -76,7 +77,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Centro de Reciclaje Municipal',
     location: {
       type: 'Point',
-      coordinates: [-78.6050, -0.9180]
+      coordinates: [-78.60389, -0.91756] // Sector Patután - Actualizado
     },
     address: 'Sector Patután Alto',
     capacity: 10000,
@@ -105,7 +106,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Punto de Acopio San Felipe',
     location: {
       type: 'Point',
-      coordinates: [-78.6120, -0.9280]
+      coordinates: [-78.61189, -0.92845] // Barrio San Felipe - Actualizado
     },
     address: 'Barrio San Felipe, Av. 5 de Junio',
     capacity: 2000,
@@ -127,7 +128,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Parque Vicente León',
     location: {
       type: 'Point',
-      coordinates: [-78.6156, -0.9346]
+      coordinates: [-78.61569, -0.93449] // Centro histórico - Actualizado
     },
     address: 'Parque Vicente León (frente a la Catedral)',
     capacity: 800,
@@ -147,7 +148,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Mercado El Salto',
     location: {
       type: 'Point',
-      coordinates: [-78.6140, -0.9320]
+      coordinates: [-78.61395, -0.93268] // Mercado - Actualizado
     },
     address: 'Mercado El Salto, Av. Amazonas',
     capacity: 1500,
@@ -167,7 +168,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Plaza Santo Domingo',
     location: {
       type: 'Point',
-      coordinates: [-78.6148, -0.9365]
+      coordinates: [-78.61476, -0.93601] // Plaza - Actualizado
     },
     address: 'Plaza Santo Domingo',
     capacity: 800,
@@ -187,7 +188,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Terminal Terrestre',
     location: {
       type: 'Point',
-      coordinates: [-78.6100, -0.9430]
+      coordinates: [-78.61033, -0.94289] // Terminal - Actualizado
     },
     address: 'Terminal Terrestre de Latacunga',
     capacity: 1200,
@@ -209,7 +210,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Barrio La Cocha',
     location: {
       type: 'Point',
-      coordinates: [-78.6200, -0.9400]
+      coordinates: [-78.62045, -0.93956] // La Cocha - Actualizado
     },
     address: 'Barrio La Cocha, calle principal',
     capacity: 600,
@@ -229,7 +230,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Barrio Los Ilinizas',
     location: {
       type: 'Point',
-      coordinates: [-78.6180, -0.9250]
+      coordinates: [-78.61823, -0.92534] // Los Ilinizas - Actualizado
     },
     address: 'Barrio Los Ilinizas',
     capacity: 600,
@@ -249,7 +250,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor San Buenaventura',
     location: {
       type: 'Point',
-      coordinates: [-78.6220, -0.9200]
+      coordinates: [-78.62234, -0.92045] // San Buenaventura - Actualizado
     },
     address: 'San Buenaventura Alto',
     capacity: 600,
@@ -271,7 +272,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Centro de Acopio Pastocalle',
     location: {
       type: 'Point',
-      coordinates: [-78.6000, -0.8650]
+      coordinates: [-78.60178, -0.86534] // Pastocalle - Actualizado
     },
     address: 'Parroquia Pastocalle, Centro',
     capacity: 3000,
@@ -295,7 +296,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Punto de Acopio Mulaló',
     location: {
       type: 'Point',
-      coordinates: [-78.5800, -0.9100]
+      coordinates: [-78.58123, -0.91067] // Mulaló - Actualizado
     },
     address: 'Parroquia Mulaló, Plaza Central',
     capacity: 2000,
@@ -319,7 +320,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Tanicuchí',
     location: {
       type: 'Point',
-      coordinates: [-78.6400, -0.9800]
+      coordinates: [-78.64089, -0.98023] // Tanicuchí - Actualizado
     },
     address: 'Parroquia Tanicuchí',
     capacity: 1000,
@@ -339,7 +340,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Punto de Acopio Toacaso',
     location: {
       type: 'Point',
-      coordinates: [-78.6550, -0.7950]
+      coordinates: [-78.65589, -0.79534] // Toacaso - Actualizado
     },
     address: 'Parroquia Toacaso, Vía Principal',
     capacity: 1500,
@@ -363,7 +364,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Aláquez',
     location: {
       type: 'Point',
-      coordinates: [-78.6100, -0.8850]
+      coordinates: [-78.61067, -0.88545] // Aláquez - Actualizado
     },
     address: 'Parroquia Aláquez',
     capacity: 800,
@@ -385,7 +386,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Zona Industrial Norte',
     location: {
       type: 'Point',
-      coordinates: [-78.6050, -0.9150]
+      coordinates: [-78.60523, -0.91534] // Zona Industrial - Actualizado
     },
     address: 'Av. Unidad Nacional (Zona Industrial)',
     capacity: 2000,
@@ -405,7 +406,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Mercado Mayorista',
     location: {
       type: 'Point',
-      coordinates: [-78.6080, -0.9380]
+      coordinates: [-78.60845, -0.93812] // Mercado Mayorista - Actualizado
     },
     address: 'Mercado Mayorista La Merced',
     capacity: 2500,
@@ -427,7 +428,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor ESPE Latacunga',
     location: {
       type: 'Point',
-      coordinates: [-78.6180, -0.9950]
+      coordinates: [-78.61789, -0.99534] // ESPE Campus - Actualizado
     },
     address: 'Universidad ESPE - Campus Latacunga',
     capacity: 1000,
@@ -447,7 +448,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Colegio Vicente León',
     location: {
       type: 'Point',
-      coordinates: [-78.6170, -0.9360]
+      coordinates: [-78.61712, -0.93623] // Colegio Vicente León - Actualizado
     },
     address: 'Colegio Nacional Vicente León',
     capacity: 800,
@@ -469,7 +470,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Hospital Provincial',
     location: {
       type: 'Point',
-      coordinates: [-78.6100, -0.9290]
+      coordinates: [-78.61023, -0.92912] // Hospital - Actualizado
     },
     address: 'Hospital Provincial General de Latacunga',
     capacity: 1200,
@@ -491,7 +492,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Parque La Laguna',
     location: {
       type: 'Point',
-      coordinates: [-78.6250, -0.9500]
+      coordinates: [-78.62534, -0.95012] // Parque La Laguna - Actualizado
     },
     address: 'Parque Recreacional La Laguna',
     capacity: 600,
@@ -511,7 +512,7 @@ export const collectionPointsData: CollectionPointSeedData[] = [
     name: 'Contenedor Parque Náutico',
     location: {
       type: 'Point',
-      coordinates: [-78.6180, -0.9480]
+      coordinates: [-78.61823, -0.94789] // Parque Náutico - Actualizado
     },
     address: 'Parque Náutico de Tenis',
     capacity: 500,

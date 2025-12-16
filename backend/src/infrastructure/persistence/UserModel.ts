@@ -52,7 +52,7 @@ const UserSchema = new Schema<IUserDocument>(
 );
 
 // Índices
-UserSchema.index({ email: 1 });
+// Email ya tiene unique:true en la definición del schema, no necesita índice adicional
 UserSchema.index({ role: 1, isActive: 1 });
 
 export const UserModel = mongoose.model<IUserDocument>('User', UserSchema);

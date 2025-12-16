@@ -21,7 +21,7 @@ interface ReportScreenProps {
 }
 
 interface ReportForm {
-  type: ReportType | null;
+  type: string | null;
   description: string;
   photoUri: string | null;
   location: {
@@ -29,9 +29,10 @@ interface ReportForm {
     longitude: number;
   } | null;
   address: string;
+  severity: number;
 }
 
-const reportTypes: Array<{ type: ReportType; label: string; icon: string; description: string }> = [
+const reportTypes: Array<{ type: string; label: string; icon: string; description: string }> = [
   { 
     type: ReportType.OVERFLOW, 
     label: 'Contenedor Lleno', 
@@ -46,27 +47,34 @@ const reportTypes: Array<{ type: ReportType; label: string; icon: string; descri
   },
   { 
     type: ReportType.DAMAGED_CONTAINER, 
-    label: 'Contenedor Dañado', 
+    label: 'Punto Crítico', 
     icon: '🔧',
-    description: 'El contenedor está roto o dañado'
+    description: 'Zona con problemas graves de basura'
   },
   { 
     type: ReportType.MISSED_COLLECTION, 
     label: 'Recolección Perdida', 
     icon: '📅',
     description: 'No pasó el camión recolector'
+  },
+  { 
+    type: ReportType.DANGEROUS, 
+    label: 'Residuo Peligroso', 
+    icon: '⚠️',
+    description: 'Residuos peligrosos o tóxicos'
   }
 ];
 
 export default function ReportScreen({ navigation }: ReportScreenProps) {
-  const userId = 'user123'; // TODO: Obtener del contexto de autenticación
+  const userId = 1; // TODO: Obtener del contexto de autenticación
   
   const [form, setForm] = useState<ReportForm>({
     type: null,
     description: '',
     photoUri: null,
     location: null,
-    address: ''
+    address: '',
+    severity: 3
   });
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -147,18 +155,53 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
   const getCurrentLocation = async () => {
     setIsLoadingLocation(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      // 1. Verificar si los servicios de ubicación están habilitados
+      const enabled = await Location.hasServicesEnabledAsync();
+      if (!enabled) {
         Alert.alert(
-          'Permiso Necesario',
-          'Se necesita permiso para acceder a tu ubicación.',
-          [{ text: 'OK' }]
+          'Servicios de Ubicación Deshabilitados',
+          'Por favor habilita los servicios de ubicación (GPS) en la configuración de tu dispositivo para continuar.',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Abrir Configuración', onPress: () => {
+              // En dispositivos reales, esto debería abrir la configuración
+              Alert.alert('Instrucciones', 
+                '1. Ve a Configuración del dispositivo\n' +
+                '2. Busca "Ubicación" o "Location"\n' +
+                '3. Activa los servicios de ubicación\n' +
+                '4. Regresa a la app e intenta nuevamente'
+              );
+            }}
+          ]
         );
         setIsLoadingLocation(false);
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({});
+      // 2. Solicitar permisos
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permiso Denegado',
+          'La app necesita acceso a tu ubicación para reportar problemas de residuos. Por favor habilita el permiso en la configuración de tu dispositivo.',
+          [
+            { text: 'OK' }
+          ]
+        );
+        setIsLoadingLocation(false);
+        return;
+      }
+
+      // 3. Obtener ubicación con configuración optimizada
+      console.log('📍 Obteniendo ubicación...');
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+        maximumAge: 10000, // Aceptar ubicación de hasta 10 segundos atrás
+        timeout: 15000, // Esperar hasta 15 segundos
+      });
+
+      console.log('✅ Ubicación obtenida:', location.coords);
+
       setForm({
         ...form,
         location: {
@@ -166,13 +209,56 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
           longitude: location.coords.longitude
         }
       });
-      Alert.alert('✅ Ubicación Capturada', 'Tu ubicación ha sido registrada correctamente.');
-    } catch (error) {
+      
+      Alert.alert(
+        '✅ Ubicación Capturada', 
+        `Lat: ${location.coords.latitude.toFixed(6)}\nLon: ${location.coords.longitude.toFixed(6)}`
+      );
+    } catch (error: any) {
       console.error('Error al obtener ubicación:', error);
-      Alert.alert('Error', 'No se pudo obtener tu ubicación. Intenta nuevamente.');
+      
+      let errorMessage = 'No se pudo obtener tu ubicación. ';
+      
+      if (error.code === 'E_LOCATION_SERVICES_DISABLED') {
+        errorMessage += 'Los servicios de ubicación están deshabilitados.';
+      } else if (error.code === 'E_LOCATION_UNAVAILABLE') {
+        errorMessage += 'Ubicación no disponible. Intenta al aire libre o verifica tu GPS.';
+      } else if (error.code === 'E_LOCATION_TIMEOUT') {
+        errorMessage += 'Tiempo de espera agotado. Verifica tu conexión GPS.';
+      } else {
+        errorMessage += 'Verifica que el GPS esté habilitado y tengas buena señal.';
+      }
+      
+      Alert.alert(
+        'Error de Ubicación', 
+        errorMessage + '\n\nConsejos:\n• Activa el GPS en configuración\n• Sal al exterior para mejor señal\n• Reinicia el dispositivo',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Reintentar', onPress: getCurrentLocation },
+          { text: 'Usar Ubicación de Prueba (Solo Desarrollo)', onPress: useMockLocation }
+        ]
+      );
     } finally {
       setIsLoadingLocation(false);
     }
+  };
+
+  // Usar ubicación de prueba (para desarrollo/testing)
+  const useMockLocation = () => {
+    const mockLocation = {
+      latitude: -0.9346, // Centro de Latacunga
+      longitude: -78.6157,
+    };
+    
+    setForm({
+      ...form,
+      location: mockLocation
+    });
+    
+    Alert.alert(
+      '⚠️ Ubicación de Prueba',
+      `Usando ubicación del centro de Latacunga\nLat: ${mockLocation.latitude}\nLon: ${mockLocation.longitude}\n\nEsto es solo para pruebas.`
+    );
   };
 
   // Validar formulario
@@ -202,21 +288,45 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
 
     setIsSubmitting(true);
     try {
-      // TODO: Integrar con API del backend
-      // const response = await api.post('/waste-reports', {
-      //   type: form.type,
-      //   description: form.description,
-      //   photo: form.photoUri,
-      //   latitude: form.location!.latitude,
-      //   longitude: form.location!.longitude
-      // });
+      console.log('📤 ========== ENVIANDO REPORTE A API EPAGAL ==========');
+      console.log('📍 Ubicación capturada:', {
+        latitude: form.location!.latitude,
+        longitude: form.location!.longitude
+      });
+      
+      // Crear reporte usando la API de EPAGAL
+      const reportData = {
+        userId: userId,
+        type: form.type!,
+        description: form.description,
+        coordinates: {
+          latitude: form.location!.latitude,
+          longitude: form.location!.longitude,
+        },
+        photoUrl: form.photoUri || undefined,
+        severity: form.severity,
+        address: form.address || undefined,
+      };
 
-      // Simular envío
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log('📦 Datos del reporte:', JSON.stringify(reportData, null, 2));
+      
+      const result = await wasteReportService.createReport(reportData);
+      
+      console.log('✅ ========== REPORTE CREADO EXITOSAMENTE ==========');
+      console.log('🆔 ID de incidencia:', result.id);
+      console.log('📍 Ubicación guardada:', {
+        lat: result.coordinates.latitude,
+        lon: result.coordinates.longitude
+      });
+      console.log('📊 Datos completos:', result);
 
       Alert.alert(
         '🎉 Reporte Enviado',
-        '¡Gracias por contribuir! Has ganado puntos por tu reporte.',
+        `¡Gracias por contribuir!\n\n` +
+        `Incidencia #${result.id} registrada exitosamente\n` +
+        `Ubicación: ${result.coordinates.latitude.toFixed(6)}, ${result.coordinates.longitude.toFixed(6)}\n` +
+        `Zona: ${result.zone}\n` +
+        `Estado: ${result.status}`,
         [
           {
             text: 'Ver Mis Puntos',
@@ -229,16 +339,22 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
                 type: null,
                 description: '',
                 photoUri: null,
-                location: form.location,
-                address: form.address
+                location: form.location, // Mantener la ubicación para el siguiente reporte
+                address: form.address,
+                severity: 3
               });
             }
           }
         ]
       );
-    } catch (error) {
-      console.error('Error al enviar reporte:', error);
-      Alert.alert('Error', 'No se pudo enviar el reporte. Intenta nuevamente.');
+    } catch (error: any) {
+      console.error('❌ ========== ERROR AL ENVIAR REPORTE ==========');
+      console.error('Mensaje:', error.message);
+      console.error('Detalles:', error);
+      Alert.alert(
+        '❌ Error al Enviar', 
+        error.message || 'No se pudo enviar el reporte. Verifica tu conexión a internet e intenta nuevamente.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -322,17 +438,29 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
         {/* Ubicación */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>4. Ubicación *</Text>
+          <Text style={styles.sectionSubtitle}>
+            Captura tu ubicación actual para registrar el lugar exacto del problema
+          </Text>
           {form.location ? (
             <View style={styles.locationCard}>
               <Text style={styles.locationIcon}>📍</Text>
               <View style={styles.locationInfo}>
-                <Text style={styles.locationLabel}>Ubicación Capturada</Text>
+                <Text style={styles.locationLabel}>✅ Ubicación Guardada</Text>
                 <Text style={styles.locationCoords}>
-                  {form.location.latitude.toFixed(6)}, {form.location.longitude.toFixed(6)}
+                  Latitud: {form.location.latitude.toFixed(6)}
+                </Text>
+                <Text style={styles.locationCoords}>
+                  Longitud: {form.location.longitude.toFixed(6)}
+                </Text>
+                <Text style={styles.locationNote}>
+                  Esta ubicación será enviada a la API de EPAGAL
                 </Text>
               </View>
-              <TouchableOpacity onPress={getCurrentLocation}>
-                <Text style={styles.updateLocationText}>Actualizar</Text>
+              <TouchableOpacity 
+                onPress={getCurrentLocation}
+                style={styles.updateLocationButton}
+              >
+                <Text style={styles.updateLocationText}>🔄 Actualizar</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -342,11 +470,17 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
               disabled={isLoadingLocation}
             >
               {isLoadingLocation ? (
-                <ActivityIndicator color={colors.primary[600]} />
+                <>
+                  <ActivityIndicator color={colors.primary[600]} />
+                  <Text style={styles.locationButtonText}>Obteniendo ubicación...</Text>
+                </>
               ) : (
                 <>
                   <Text style={styles.locationButtonIcon}>📍</Text>
                   <Text style={styles.locationButtonText}>Capturar Mi Ubicación</Text>
+                  <Text style={styles.locationButtonSubtext}>
+                    Usaremos GPS para obtener tu posición exacta
+                  </Text>
                 </>
               )}
             </TouchableOpacity>

@@ -15,25 +15,38 @@ export interface CollectionPoint {
   distance?: number;
 }
 
+// Tipos actualizados para usar API de EPAGAL
 export interface WasteReport {
-  id: string;
-  userId: string;
-  type: 'OVERFLOW' | 'ILLEGAL_DUMP' | 'DAMAGED_CONTAINER' | 'MISSED_COLLECTION';
+  id: number;
+  userId: number;
+  type: string; // TipoIncidencia de EPAGAL
   description: string;
   coordinates: {
     latitude: number;
     longitude: number;
   };
-  address: string;
+  address?: string;
   photoUrl?: string;
-  status: 'PENDING' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED';
-  verifiedByAI: boolean;
-  pointsAwarded: number;
+  status: string; // EstadoIncidencia de EPAGAL
+  severity: number; // 1-5
+  zone: string; // ZonaIncidencia de EPAGAL
   createdAt: string;
-  updatedAt: string;
+  reportedAt: string;
 }
 
-export type WasteReportType = 'OVERFLOW' | 'ILLEGAL_DUMP' | 'DAMAGED' | 'MISSED' | 'OTHER';
+export type WasteReportType = 
+  | 'CONTENEDOR_LLENO' 
+  | 'BASURA_ESPARCIDA' 
+  | 'PUNTO_CRITICO' 
+  | 'FALTA_RECOLECCION' 
+  | 'RESIDUO_PELIGROSO' 
+  | 'OTRO';
+
+export type WasteReportStatus = 
+  | 'PENDIENTE' 
+  | 'EN_PROCESO' 
+  | 'RESUELTA' 
+  | 'RECHAZADA';
 
 export interface User {
   id: string;

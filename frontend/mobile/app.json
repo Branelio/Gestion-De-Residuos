@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Latacunga Limpia",
+    "slug": "latacunga-limpia",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,18 +13,52 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Esta aplicación necesita acceso a tu ubicación para mostrarte los puntos de acopio más cercanos y permitirte reportar residuos en tu área.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Esta aplicación necesita acceso a tu ubicación para mostrarte los puntos de acopio más cercanos y permitirte reportar residuos en tu área.",
+        "NSCameraUsageDescription": "Esta aplicación necesita acceso a tu cámara para tomar fotos de reportes de residuos.",
+        "NSPhotoLibraryUsageDescription": "Esta aplicación necesita acceso a tu galería para seleccionar fotos de reportes de residuos."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.latacunga.limpia"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Esta aplicación necesita acceso a tu ubicación para mostrarte los puntos de acopio más cercanos."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Esta aplicación necesita acceso a tu cámara para tomar fotos de reportes."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Esta aplicación necesita acceso a tu galería para seleccionar fotos."
+        }
+      ]
+    ]
   }
 }
