@@ -2,14 +2,22 @@ import { Router } from 'express';
 import { CollectionPointController } from '../controllers/CollectionPointController';
 import { RouteOptimizationController } from '../controllers/RouteOptimizationController';
 import { WasteReportController } from '../controllers/WasteReportController';
+import { UserFeedbackController } from '../controllers/UserFeedbackController';
+import { SubmitUserFeedbackUseCase } from '../../../application/use-cases/SubmitUserFeedbackUseCase';
+import { MongoUserFeedbackRepository } from '../../repositories/MongoUserFeedbackRepository';
 import authRoutes from './auth';
 
 const router = Router();
+
+// Inicializar repositories y use cases
+const feedbackRepository = new MongoUserFeedbackRepository();
+const submitFeedbackUseCase = new SubmitUserFeedbackUseCase(feedbackRepository);
 
 // Inicializar controllers
 const collectionPointController = new CollectionPointController();
 const routeOptimizationController = new RouteOptimizationController();
 const wasteReportController = new WasteReportController();
+const feedbackController = new UserFeedbackController(submitFeedbackUseCase, feedbackRepository);
 
 /**
  * ============================================
@@ -523,6 +531,109 @@ router.get(
 router.get(
   '/waste-reports/:id',
   (req, res) => wasteReportController.getById(req, res)
+);
+
+/**
+ * ============================================
+ * RUTAS DE FEEDBACK DE USUARIOS
+ * ============================================
+ */
+
+/**
+ * @swagger
+ * /api/feedback:
+ *   post:
+ *     summary: Enviar feedback de usuario
+ *     tags: [User Feedback]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - type
+ *               - rating
+ *             properties:
+ *               userId:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *                 enum: [GEOLOCATION_ACCURACY, APP_USABILITY, COLLECTION_POINT_ISSUE, FEATURE_SUGGESTION, BUG_REPORT, OTHER]
+ *               rating:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *               comment:
+ *                 type: string
+ *                 maxLength: 1000
+ *               metadata:
+ *                 type: object
+ *                 properties:
+ *                   userLocation:
+ *                     type: object
+ *                     properties:
+ *                       latitude:
+ *                         type: number
+ *                       longitude:
+ *                         type: number
+ *                   nearestPointId:
+ *                     type: string
+ *                   appVersion:
+ *                     type: string
+ *                   deviceInfo:
+ *                     type: string
+ *     responses:
+ *       201:
+ *         description: Feedback enviado exitosamente
+ *       400:
+ *         description: Datos inválidos
+ */
+router.post(
+  '/feedback',
+  (req, res) => feedbackController.submitFeedback(req, res)
+);
+
+/**
+ * @swagger
+ * /api/feedback/stats:
+ *   get:
+ *     summary: Obtener estadísticas de feedback
+ *     tags: [User Feedback]
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Estadísticas de feedback
+ */
+router.get(
+  '/feedback/stats',
+  (req, res) => feedbackController.getStats(req, res)
+);
+
+/**
+ * @swagger
+ * /api/feedback/user/{userId}:
+ *   get:
+ *     summary: Obtener feedback de un usuario específico
+ *     tags: [User Feedback]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Feedback del usuario
+ */
+router.get(
+  '/feedback/user/:userId',
+  (req, res) => feedbackController.getUserFeedback(req, res)
 );
 
 export default router;

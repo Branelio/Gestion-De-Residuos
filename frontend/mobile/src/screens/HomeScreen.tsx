@@ -12,12 +12,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
 import { collectionPointService } from '../services/collectionPointService';
+import FeedbackModal from '../components/FeedbackModal';
+import { FeedbackType } from '../services/feedbackService';
 
 export default function HomeScreen({ navigation }: any) {
   const userPoints = 150; // Demo data - en el futuro vendrá de la API de usuarios
+  const userId = '1'; // TODO: Obtener del contexto de autenticación
   const [stats, setStats] = useState({ total: 0, available: 0, full: 0, averageFillPercentage: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   const loadStats = async () => {
     try {
@@ -156,6 +160,22 @@ export default function HomeScreen({ navigation }: any) {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Botón flotante de feedback */}
+      <TouchableOpacity
+        style={styles.feedbackButton}
+        onPress={() => setShowFeedbackModal(true)}
+      >
+        <Text style={styles.feedbackButtonText}>💬</Text>
+      </TouchableOpacity>
+
+      {/* Modal de Feedback */}
+      <FeedbackModal
+        visible={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        userId={userId}
+        initialType={FeedbackType.APP_USABILITY}
+      />
     </SafeAreaView>
   );
 }
@@ -361,5 +381,20 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  feedbackButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary[500],
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.lg,
+  },
+  feedbackButtonText: {
+    fontSize: 28,
   },
 });
