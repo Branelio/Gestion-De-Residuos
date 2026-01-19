@@ -19,7 +19,7 @@ Se ha implementado un sistema completo de autenticación JWT para el backend de 
   - `delete(id: UserId)`: Eliminar usuario
   - `update(user: User)`: Actualizar usuario
 
-#### 2. **Rutas de Autenticación** (`/api/auth`)
+#### 2. **Rutas de Autenticación** (`/api/auth`)  
 
 ##### **POST /api/auth/register**
 Registra un nuevo usuario como ciudadano.

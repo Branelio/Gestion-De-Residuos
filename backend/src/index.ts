@@ -43,7 +43,7 @@ app.use(express.urlencoded({ extended: true }));
  */
 app.get('/health', (_req, res) => {
   res.json({ 
-    status: 'OK', 
+    status: 'OK',
     message: 'Latacunga Waste Management API',
     timestamp: new Date().toISOString(),
   });

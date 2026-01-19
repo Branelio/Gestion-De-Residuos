@@ -8,7 +8,7 @@ const API_CONFIG = {
   // Para desarrollo local desde dispositivo físico usa tu IP local
   // Para emulador Android usa: http://10.0.2.2:3000
   // Para simulador iOS usa: http://localhost:3000
-  BASE_URL: 'http://10.0.2.2:3000', // IP para emulador Android
+  BASE_URL: 'http://172.16.85.77:3000', // IP local para dispositivo físico
   TIMEOUT: 10000, // 10 segundos
 };
 
