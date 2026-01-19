@@ -301,8 +301,8 @@ Diseñar e integrar un sistema de geolocalización en la aplicación móvil que 
 ## 🤝 Colaboradores
 
 ### Estudiantes
-- **Brandon Joel Sangoluisa Diaz** - bjsangoluisa@espe.edu.ec
-- **Byron Wladimir Chuquitarco Abata** - bwchuquitarco@espe.edu.ec
+- **Brandon Joel Sangoluisa Diaz** ([@Branelio](https://github.com/Branelio)) - bjsangoluisa@espe.edu.ec
+- **Byron Wladimir Chuquitarco Abata** ([@ByonAbata](https://github.com/ByonAbata)) - bwchuquitarco@espe.edu.ec
 
 ### Tutor
 - **Ing. Franklin Javier Montaluisa Yugla** - fjmontaluisa@espe.edu.ec
@@ -310,6 +310,8 @@ Diseñar e integrar un sistema de geolocalización en la aplicación móvil que 
 ### Entidad Co-participante
 - **EPAGAL (Empresa Pública de Aseo y Gestión Ambiental del Cantón Latacunga)**
 - Contacto: Ing. Juan Salgado - juan.salgado@epagal.gob.ec
+
+Para más información sobre los colaboradores y cómo contribuir, consulta [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
 ## 📄 Licencia
 
