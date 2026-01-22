@@ -7,6 +7,11 @@ export interface IUserDocument extends Omit<Document, '_id'> {
   password: string;
   role: 'citizen' | 'admin' | 'operator';
   isActive: boolean;
+  phone?: string;
+  address?: string;
+  avatar?: string;
+  points?: number;
+  reportsCount?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +48,26 @@ const UserSchema = new Schema<IUserDocument>(
       type: Boolean,
       default: true,
       required: true,
+    },
+    phone: {
+      type: String,
+      default: null,
+    },
+    address: {
+      type: String,
+      default: null,
+    },
+    avatar: {
+      type: String,
+      default: null,
+    },
+    points: {
+      type: Number,
+      default: 0,
+    },
+    reportsCount: {
+      type: Number,
+      default: 0,
     },
   },
   {

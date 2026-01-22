@@ -14,6 +14,11 @@ export interface UserProps {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  phone?: string;
+  address?: string;
+  avatar?: string;
+  points?: number;
+  reportsCount?: number;
 }
 
 export class User {
@@ -71,10 +76,49 @@ export class User {
     return this.props.isActive;
   }
 
+  get password(): string | undefined {
+    return this.props.password;
+  }
+
   updateName(name: string): void {
     this.props.name = name;
     this.props.updatedAt = new Date();
     this.validate();
+  }
+
+  updatePhone(phone: string): void {
+    this.props.phone = phone;
+    this.props.updatedAt = new Date();
+  }
+
+  updateAddress(address: string): void {
+    this.props.address = address;
+    this.props.updatedAt = new Date();
+  }
+
+  updateAvatar(avatar: string): void {
+    this.props.avatar = avatar;
+    this.props.updatedAt = new Date();
+  }
+
+  get phone(): string | undefined {
+    return this.props.phone;
+  }
+
+  get address(): string | undefined {
+    return this.props.address;
+  }
+
+  get avatar(): string | undefined {
+    return this.props.avatar;
+  }
+
+  get points(): number {
+    return this.props.points || 0;
+  }
+
+  get reportsCount(): number {
+    return this.props.reportsCount || 0;
   }
 
   toJSON(): Record<string, unknown> {
@@ -82,6 +126,11 @@ export class User {
       id: this.props.id.value,
       email: this.props.email,
       name: this.props.name,
+      phone: this.props.phone,
+      address: this.props.address,
+      avatar: this.props.avatar,
+      points: this.props.points || 0,
+      reportsCount: this.props.reportsCount || 0,
       createdAt: this.props.createdAt.toISOString(),
       updatedAt: this.props.updatedAt.toISOString(),
     };

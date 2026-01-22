@@ -12,6 +12,11 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -53,13 +58,20 @@ class AuthService {
    */
   async register(data: RegisterRequest): Promise<AuthResponse> {
     try {
-      const response = await httpClient.post<AuthResponse>(
-        `${this.BASE_PATH}/register`,
+      const response = await httpClient.post<{ success: boolean; data: User; message: string }>(
+        '/api/users/register',
         data
       );
-      return response;
+      
+      // Después del registro, hacer login automático
+      return await this.login({ email: data.email, password: data.password });
     } catch (error: any) {
       console.error('Error en registro:', error);
+      
+      if (error.response?.status === 409) {
+        throw new Error('El email ya está registrado');
+      }
+      
       throw new Error(
         error.response?.data?.message || 
         'Error al registrar usuario.'

@@ -13,15 +13,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
-import { authService } from '../services/authService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginScreen({ navigation }: any) {
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [name, setName] = useState('');
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -31,13 +31,7 @@ export default function LoginScreen({ navigation }: any) {
 
     setIsLoading(true);
     try {
-      const response = await authService.login({ email, password });
-      
-      // Guardar token y usuario
-      await AsyncStorage.setItem('authToken', response.token);
-      await AsyncStorage.setItem('userData', JSON.stringify(response.user));
-      
-      console.log('✅ Login exitoso:', response.user.name);
+      await login({ email, password });
       
       // Navegar a la app
       navigation.replace('Tabs');
@@ -65,16 +59,23 @@ export default function LoginScreen({ navigation }: any) {
 
     setIsLoading(true);
     try {
+      // El authService.register ya hace el login automático después del registro
+      const { authService } = await import('../services/authService');
       const response = await authService.register({ email, password, name });
       
-      // Guardar token y usuario
-      await AsyncStorage.setItem('authToken', response.token);
-      await AsyncStorage.setItem('userData', JSON.stringify(response.user));
+      // Guardar el token y usuario en el contexto
+      await login({ email, password });
       
-      console.log('✅ Registro exitoso:', response.user.name);
-      
-      // Navegar a la app
-      navigation.replace('Tabs');
+      Alert.alert(
+        'Registro exitoso',
+        'Tu cuenta ha sido creada correctamente',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.replace('Tabs'),
+          },
+        ]
+      );
     } catch (error: any) {
       console.error('Error en registro:', error);
       Alert.alert(
@@ -158,15 +159,12 @@ export default function LoginScreen({ navigation }: any) {
                 autoCapitalize="none"
                 editable={!isLoading}
               />
-            </View>
-
-            {!isRegistering && (
-              <TouchableOpacity style={styles.forgotPassword}>
-                <Text style={styles.forgotPasswordText}>
-                  ¿Olvidaste tu contraseña?
+              {isRegistering && (
+                <Text style={styles.helperText}>
+                  Mínimo 6 caracteres
                 </Text>
-              </TouchableOpacity>
-            )}
+              )}
+            </View>
 
             <TouchableOpacity
               style={[styles.button, styles.primaryButton, isLoading && styles.buttonDisabled]}
@@ -182,23 +180,17 @@ export default function LoginScreen({ navigation }: any) {
               )}
             </TouchableOpacity>
 
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>o</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={toggleMode}
-              disabled={isLoading}
-            >
-              <Text style={styles.secondaryButtonText}>
-                {isRegistering
-                  ? '¿Ya tienes cuenta? Inicia sesión'
-                  : '¿No tienes cuenta? Regístrate'}
+            {/* Toggle entre Login y Registro */}
+            <View style={styles.toggleContainer}>
+              <Text style={styles.toggleText}>
+                {isRegistering ? '¿Ya tienes una cuenta?' : '¿No tienes una cuenta?'}
               </Text>
-            </TouchableOpacity>
+              <TouchableOpacity onPress={toggleMode} disabled={isLoading}>
+                <Text style={styles.toggleLink}>
+                  {isRegistering ? ' Inicia sesión' : ' Crea una'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Información adicional */}
@@ -241,14 +233,25 @@ const styles = StyleSheet.create({
     color: colors.primary[600],
     marginBottom: spacing.xs,
   },
-  subtitle: {
+  helperText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.text.secondary,
+    marginTop: 4,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  toggleText: {
     fontSize: typography.fontSize.sm,
     color: colors.text.secondary,
-    textAlign: 'center',
   },
-  formContainer: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
+  toggleLink: {
+    fontSize: typography.fontSize.sm,
+    color: colors.primary[600],
+    fontWeight: typography.fontWeight.semibold,
     padding: spacing.lg,
     ...shadows.lg,
   },

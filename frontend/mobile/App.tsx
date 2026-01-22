@@ -7,11 +7,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import { AuthProvider } from './src/contexts/AuthContext';
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import MapScreen from './src/screens/MapScreen';
 import ReportScreen from './src/screens/ReportScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import EditProfileScreen from './src/screens/EditProfileScreen';
 import PointsListScreen from './src/screens/PointsListScreen';
 import { theme } from './src/theme';
 
@@ -116,14 +118,17 @@ function TabNavigator() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <StatusBar style="auto" />
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Tabs" component={TabNavigator} />
-          <Stack.Screen name="PointsList" component={PointsListScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <AuthProvider>
+        <NavigationContainer>
+          <StatusBar style="auto" />
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Tabs" component={TabNavigator} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="PointsList" component={PointsListScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

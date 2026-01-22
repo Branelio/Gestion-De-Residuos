@@ -8,7 +8,7 @@ const API_CONFIG = {
   // Para desarrollo local desde dispositivo físico usa tu IP local
   // Para emulador Android usa: http://10.0.2.2:3000
   // Para simulador iOS usa: http://localhost:3000
-  BASE_URL: 'http://172.16.85.77:3000', // IP local para dispositivo físico
+  BASE_URL: 'http://192.168.100.4:3000', // IP local para dispositivo físico
   TIMEOUT: 10000, // 10 segundos
 };
 
@@ -17,6 +17,7 @@ const API_CONFIG = {
  */
 class HttpClient {
   private client: AxiosInstance;
+  private authToken: string | null = null;
 
   constructor() {
     this.client = axios.create({
@@ -27,9 +28,13 @@ class HttpClient {
       },
     });
 
-    // Interceptor de request para logging
+    // Interceptor de request para logging y autenticación
     this.client.interceptors.request.use(
       (config) => {
+        // Agregar token si existe
+        if (this.authToken) {
+          config.headers.Authorization = `Bearer ${this.authToken}`;
+        }
         console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },
@@ -111,6 +116,20 @@ class HttpClient {
     } catch (error) {
       return false;
     }
+  }
+
+  /**
+   * Configurar token de autenticación
+   */
+  setAuthToken(token: string) {
+    this.authToken = token;
+  }
+
+  /**
+   * Limpiar token de autenticación
+   */
+  clearAuthToken() {
+    this.authToken = null;
   }
 }
 

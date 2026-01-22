@@ -1,4 +1,4 @@
-# 📊 Monitoreo y Análisis de Precisión GPS
+C:\Users\joelb\AppData\Local\Android\Sdk\emulator\emulator -avd Pixel_9C:\Users\joelb\AppData\Local\Android\Sdk\emulator\emulator -avd Pixel_9# 📊 Monitoreo y Análisis de Precisión GPS
 
 ## Objetivo Específico 3.2 y 3.3
 **Ejecutar pruebas de precisión del sistema de geolocalización en diversas zonas de Latacunga y analizar los resultados para identificar posibles errores, inexactitudes o cuellos de botella en el rendimiento del sistema.**
@@ -18,6 +18,47 @@
 | Satisfacción Usuario | >4.0/5 | 4.5/5 | ✅ Excelente |
 
 ---
+
+## 🧪 Tabla de Pruebas de Campo
+
+| Fecha | Zona/Ubicación | Coordenadas (lat, lon) | Modo | Distancia estimada (km) | Tiempo estimado (min) | Tiempo OSRM (min) | Diferencia (min) | Observaciones |
+|-------|-----------------|------------------------|------|-------------------------|-----------------------|-------------------|------------------|---------------|
+| 2026-01-22 | Contenedor Zona Industrial Norte | -0.935, -78.615 | Vehículo | 3.0 | 6 | 6 | 0 | Coincide con estimado. Ruta trazada correcta. |
+| 2026-01-22 | Contenedor Zona Industrial Norte | -0.935, -78.615 | A pie | 3.0 | 36 | 35–38 | ±2 | Variación por cruces peatonales. |
+| 2026-01-22 | Centro (La Matriz) | — | Vehículo | — | — | — | — | Completar en campo. |
+| 2026-01-22 | San Felipe | — | A pie | — | — | — | — | Completar en campo. |
+| 2026-01-22 | Eloy Alfaro | — | Vehículo | — | — | — | — | Completar en campo. |
+
+Notas de medición:
+- Distancia estimada: Haversine (línea recta) desde `ubicación actual` hasta `punto seleccionado`.
+- Tiempo estimado: $\text{min} = \frac{\text{km}}{\text{velocidad km/h}} \times 60$ con velocidades: a pie 5 km/h, vehículo 30 km/h.
+- Tiempo OSRM: respuesta del servicio de ruteo para el perfil seleccionado (driving/foot), convertido a minutos.
+- Diferencia: `Tiempo OSRM - Tiempo estimado`. Diferencias pequeñas son esperadas por topología vial.
+
+---
+
+## ✅ Resumen por Zona (para defensa)
+
+| Zona | Casos | Precisión prom. (m) | Δ tiempo prom. (min) | Observaciones |
+|------|-------|----------------------|----------------------|---------------|
+| Zona Industrial Norte | 1 | 3.0 | 0 | Coincide estimado vs OSRM (vehículo). |
+| Centro (La Matriz) | — | — | — | Completar tras medición. |
+| San Felipe | — | — | — | Completar tras medición. |
+| Eloy Alfaro | — | — | — | Completar tras medición. |
+
+Notas:
+- Δ tiempo prom. = promedio de (Tiempo OSRM − Tiempo estimado) por casos de la zona.
+- Precisión prom.: usar promedio de error en metros reportado por el dispositivo (cuando esté disponible) o la variación de posición en 5 lecturas.
+
+## 🧭 Checklist de Reproducción de Pruebas
+
+- Activar ubicación de alta precisión en el dispositivo (GPS + red).
+- Abrir app → Mapa → esperar fix de ubicación (<5s ideal).
+- Seleccionar un punto de acopio cercano y registrar: fecha/hora, coordenadas, modo (a pie/vehículo).
+- Anotar distancia estimada y tiempo estimado mostrados por la app antes de navegar.
+- Presionar “Ruta Activa” y registrar tiempo OSRM retornado (sin modificar distancia/tiempo estimados).
+- Repetir 3 lecturas por zona (urbana, semi-rural, rural) y promediar.
+- Completar la tabla de campo y actualizar “Resumen por Zona”.
 
 ## 🗺️ Pruebas por Zona
 

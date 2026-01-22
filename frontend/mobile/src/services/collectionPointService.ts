@@ -1,4 +1,10 @@
 import { httpClient } from './httpClient';
+import {
+  routeOptimizationService,
+  OptimizedRoute,
+  CollectionPointWithDistance,
+  Coordinate,
+} from './routeOptimizationService';
 
 /**
  * Interfaces para las respuestas de la API
@@ -209,6 +215,97 @@ class CollectionPointService {
       console.error('Error obteniendo estimaciones:', error);
       throw error;
     }
+  }
+
+  /**
+   * Optimizar ruta de recolección
+   */
+  async optimizeCollectionRoute(
+    userLocation: Coordinate,
+    points: CollectionPoint[]
+  ): Promise<OptimizedRoute> {
+    try {
+      const normalizedPoints = points.map((p) => ({
+        id: typeof p.id === 'string' ? p.id : p.id.value,
+        name: p.name,
+        coordinates: p.coordinates,
+        fillPercentage: p.fillPercentage,
+        status: p.status.toLowerCase(),
+      }));
+
+      const optimizedRoute = routeOptimizationService.optimizeRoute(
+        userLocation,
+        normalizedPoints
+      );
+
+      console.log('🗺️ Ruta optimizada:', optimizedRoute);
+      return optimizedRoute;
+    } catch (error) {
+      console.error('Error optimizando ruta:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener puntos ordenados por distancia
+   */
+  orderPointsByDistance(
+    userLocation: Coordinate,
+    points: CollectionPoint[]
+  ): CollectionPointWithDistance[] {
+    const normalizedPoints = points.map((p) => ({
+      id: typeof p.id === 'string' ? p.id : p.id.value,
+      name: p.name,
+      coordinates: p.coordinates,
+      fillPercentage: p.fillPercentage,
+      status: p.status.toLowerCase(),
+    }));
+
+    return routeOptimizationService.orderPointsByDistance(
+      userLocation,
+      normalizedPoints
+    );
+  }
+
+  /**
+   * Obtener puntos priorizados por disponibilidad y distancia
+   */
+  prioritizePoints(
+    userLocation: Coordinate,
+    points: CollectionPoint[],
+    prioritizeAvailable: boolean = true
+  ): CollectionPointWithDistance[] {
+    const normalizedPoints = points.map((p) => ({
+      id: typeof p.id === 'string' ? p.id : p.id.value,
+      name: p.name,
+      coordinates: p.coordinates,
+      fillPercentage: p.fillPercentage,
+      status: p.status.toLowerCase(),
+    }));
+
+    return routeOptimizationService.prioritizePoints(
+      userLocation,
+      normalizedPoints,
+      prioritizeAvailable
+    );
+  }
+
+  /**
+   * Estimar tiempo de viaje entre dos puntos
+   */
+  estimateTravelTime(
+    from: Coordinate,
+    to: Coordinate,
+    mode: 'on_foot' | 'driving' | 'cycling' = 'driving'
+  ): { distance: number; duration: number } {
+    return routeOptimizationService.estimateTravelTime(from, to, mode);
+  }
+
+  /**
+   * Obtener modos de transporte disponibles
+   */
+  getTransportModes() {
+    return routeOptimizationService.getTransportModes();
   }
 }
 

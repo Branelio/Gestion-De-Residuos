@@ -3,6 +3,7 @@
         "git fetch": true,
         "git checkout": true,
         "git merge": true,
-        "npm test": true
+        "npm test": true,
+        "docker ps": true
     }
 }

@@ -11,7 +11,9 @@ import {
   RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
+import { useAuth } from '../contexts/AuthContext';
 import { wasteReportService, WasteReport } from '../services/wasteReportService';
 
 interface ProfileScreenProps {
@@ -46,19 +48,9 @@ interface Reward {
 }
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
-  const userId = 1; // TODO: Obtener del contexto de autenticación
+  const { user, logout, isAuthenticated } = useAuth();
+  const userId = user?.id || ''; // Obtener userId del contexto de autenticación
   
-  // Mock data - TODO: Integrar con API
-  const [user] = useState<UserProfile>({
-    name: 'Usuario Demo',
-    email: 'usuario@ejemplo.com',
-    avatar: '👤',
-    points: 240,
-    reportsCount: 12,
-    memberSince: 'Noviembre 2024',
-    rank: 'Ciudadano Activo'
-  });
-
   const [reports, setReports] = useState<Report[]>([]);
   const [realReports, setRealReports] = useState<WasteReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +73,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       setIsLoading(true);
       console.log('📥 Cargando reportes del usuario desde API...');
       
+      // Intentar cargar reportes, pero continuar si falla (API externa puede no estar disponible)
       const userReports = await wasteReportService.getUserReports(userId);
       setRealReports(userReports);
       
@@ -117,6 +110,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       console.log('✅ Reportes cargados:', userReports.length);
     } catch (error: any) {
       console.error('❌ Error cargando reportes:', error);
+      console.log('ℹ️ Usando datos de ejemplo (API externa no disponible)');
       // Si falla, usar datos de ejemplo
       setReports([
         { id: '1', type: 'Contenedor Lleno', date: '15 Ene', status: 'RESOLVED', points: 10 },
@@ -298,8 +292,8 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            colors={[theme.colors.primary]}
-            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary[600]]}
+            tintColor={theme.colors.primary[600]}
           />
         }
       >
@@ -313,31 +307,72 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatar}>{user.avatar}</Text>
+            <Text style={styles.avatar}>
+              {user?.name?.charAt(0).toUpperCase() || '?'}
+            </Text>
             <View style={styles.rankBadge}>
-              <Text style={styles.rankText}>⭐ {user.rank}</Text>
+              <Text style={styles.rankText}>
+                ⭐ {user?.role === 'citizen' ? 'Ciudadano Activo' : user?.role === 'operator' ? 'Operador' : 'Administrador'}
+              </Text>
             </View>
           </View>
-          <Text style={styles.userName}>{user.name}</Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
-          <Text style={styles.memberSince}>Miembro desde {user.memberSince}</Text>
+          <Text style={styles.userName}>{user?.name || 'Usuario'}</Text>
+          <Text style={styles.userEmail}>{user?.email || ''}</Text>
+          <Text style={styles.memberSince}>
+            Miembro desde {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }) : 'Hoy'}
+          </Text>
 
           {/* Stats */}
           <View style={styles.statsContainer}>
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{user.points}</Text>
+              <Text style={styles.statValue}>{user?.points || 0}</Text>
               <Text style={styles.statLabel}>Puntos</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{user.reportsCount}</Text>
+              <Text style={styles.statValue}>{user?.reportsCount || 0}</Text>
               <Text style={styles.statLabel}>Reportes</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{Math.floor(user.reportsCount * 0.8)}</Text>
+              <Text style={styles.statValue}>{stats.resolved}</Text>
               <Text style={styles.statLabel}>Resueltos</Text>
             </View>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => navigation.navigate('EditProfile')}
+            >
+              <Ionicons name="create-outline" size={20} color={theme.colors.primary[600]} />
+              <Text style={styles.editButtonText}>Editar Perfil</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={() => {
+                Alert.alert(
+                  'Cerrar Sesión',
+                  '¿Estás seguro que deseas salir?',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                      text: 'Salir',
+                      style: 'destructive',
+                      onPress: async () => {
+                        await logout();
+                        navigation.replace('Login');
+                      },
+                    },
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="log-out-outline" size={20} color={theme.colors.error} />
+              <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -760,6 +795,45 @@ const styles = StyleSheet.create({
   },
   redeemButtonTextDisabled: {
     color: theme.colors.neutral[500]
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.lg,
+  },
+  editButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    gap: theme.spacing.sm,
+    borderWidth: 2,
+    borderColor: theme.colors.primary[600],
+  },
+  editButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.primary[600],
+  },
+  logoutButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    gap: theme.spacing.sm,
+    borderWidth: 2,
+    borderColor: theme.colors.error,
+  },
+  logoutButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.error,
   },
   impactCard: {
     gap: theme.spacing.md

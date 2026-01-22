@@ -6,6 +6,7 @@ import { UserFeedbackController } from '../controllers/UserFeedbackController';
 import { SubmitUserFeedbackUseCase } from '../../../application/use-cases/SubmitUserFeedbackUseCase';
 import { MongoUserFeedbackRepository } from '../../repositories/MongoUserFeedbackRepository';
 import authRoutes from './auth';
+import userRoutes from './users';
 
 const router = Router();
 
@@ -25,6 +26,13 @@ const feedbackController = new UserFeedbackController(submitFeedbackUseCase, fee
  * ============================================
  */
 router.use('/auth', authRoutes);
+
+/**
+ * ============================================
+ * RUTAS DE USUARIOS
+ * ============================================
+ */
+router.use('/users', userRoutes);
 
 /**
  * ============================================

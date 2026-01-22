@@ -12,6 +12,7 @@ import MapView, { Marker, Circle, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
 import { collectionPointService, CollectionPoint } from '../services/collectionPointService';
+import { routeOptimizationService } from '../services/routeOptimizationService';
 
 // Demo data - Fuera del componente para mejor rendimiento
 const collectionPoints: CollectionPoint[] = [];
@@ -29,10 +30,36 @@ export default function MapScreen({ navigation, route }: any) {
   const [routeMode, setRouteMode] = useState<'foot' | 'car'>('foot'); // foot-walking o car
   const mapRef = useRef<MapView>(null);
 
+  /**
+   * Calcula el tiempo estimado inicial basado en distancia directa
+   */
+  const calculateEstimatedTime = (point: CollectionPoint, mode: 'foot' | 'car') => {
+    if (!location) return '~5 min';
+
+    try {
+      const { distance, duration } = routeOptimizationService.estimateTravelTime(
+        {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        },
+        point.coordinates,
+        mode === 'foot' ? 'on_foot' : 'driving'
+      );
+
+      return `${duration} min`;
+    } catch (error) {
+      console.error('Error calculando tiempo estimado:', error);
+      return '~5 min';
+    }
+  };
+
   const handleMarkerPress = (point: CollectionPoint) => {
     setSelectedPoint(point);
     setShowRoute(false);
     setRouteCoordinates([]);
+    // Calcular tiempo estimado cuando se selecciona un punto
+    const estimatedTime = calculateEstimatedTime(point, routeMode);
+    setRouteDuration(estimatedTime);
   };
 
   const getRoute = async (start: {latitude: number, longitude: number}, end: {latitude: number, longitude: number}, mode: 'foot' | 'car') => {
@@ -58,8 +85,7 @@ export default function MapScreen({ navigation, route }: any) {
         }));
         
         setRouteCoordinates(coordinates);
-        setRouteDistance(`${(route.distance / 1000).toFixed(1)} km`);
-        setRouteDuration(`${Math.round(route.duration / 60)} min`);
+        // No actualizar distancia y tiempo - mantener los valores estimados originales
         setShowRoute(true);
         
         // Ajustar el mapa para mostrar toda la ruta
@@ -98,6 +124,21 @@ export default function MapScreen({ navigation, route }: any) {
     }
   };
 
+  /**
+   * Cambiar modo de transporte y recalcular tiempo
+   */
+  const handleModeChange = (newMode: 'foot' | 'car') => {
+    setRouteMode(newMode);
+    if (selectedPoint) {
+      const estimatedTime = calculateEstimatedTime(selectedPoint, newMode);
+      setRouteDuration(estimatedTime);
+      if (showRoute) {
+        setShowRoute(false);
+        setRouteCoordinates([]);
+      }
+    }
+  };
+
   // Efecto para manejar parámetros de navegación
   useEffect(() => {
     if (route?.params?.selectedPointId && nearbyPoints.length > 0) {
@@ -107,6 +148,9 @@ export default function MapScreen({ navigation, route }: any) {
       });
       if (point) {
         setSelectedPoint(point);
+        // Calcular tiempo estimado
+        const estimatedTime = calculateEstimatedTime(point, routeMode);
+        setRouteDuration(estimatedTime);
         // Animar el mapa al punto seleccionado
         mapRef.current?.animateToRegion({
           latitude: point.coordinates.latitude,
@@ -260,14 +304,7 @@ export default function MapScreen({ navigation, route }: any) {
                     styles.modeButton,
                     routeMode === 'foot' && styles.modeButtonActive
                   ]}
-                  onPress={() => {
-                    setRouteMode('foot');
-                    if (showRoute) {
-                      // Recalcular ruta con nuevo modo
-                      setShowRoute(false);
-                      setRouteCoordinates([]);
-                    }
-                  }}
+                  onPress={() => handleModeChange('foot')}
                 >
                   <Text style={styles.modeEmoji}>🚶</Text>
                   <Text style={[
@@ -281,14 +318,7 @@ export default function MapScreen({ navigation, route }: any) {
                     styles.modeButton,
                     routeMode === 'car' && styles.modeButtonActive
                   ]}
-                  onPress={() => {
-                    setRouteMode('car');
-                    if (showRoute) {
-                      // Recalcular ruta con nuevo modo
-                      setShowRoute(false);
-                      setRouteCoordinates([]);
-                    }
-                  }}
+                  onPress={() => handleModeChange('car')}
                 >
                   <Text style={styles.modeEmoji}>🚗</Text>
                   <Text style={[

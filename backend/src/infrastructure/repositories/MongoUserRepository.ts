@@ -73,6 +73,11 @@ export class MongoUserRepository implements UserRepository {
           name: user.name,
           role: user.role,
           isActive: user.isActive,
+          phone: user.phone,
+          address: user.address,
+          avatar: user.avatar,
+          points: user.points,
+          reportsCount: user.reportsCount,
           updatedAt: new Date(),
         });
       } else {
@@ -84,12 +89,59 @@ export class MongoUserRepository implements UserRepository {
           password,
           role: user.role,
           isActive: user.isActive,
+          phone: user.phone,
+          address: user.address,
+          avatar: user.avatar,
+          points: user.points || 0,
+          reportsCount: user.reportsCount || 0,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         });
       }
     } catch (error) {
       throw new Error(`Error saving user: ${error}`);
+    }
+  }
+
+  async create(userData: {
+    email: string;
+    name: string;
+    password: string;
+    role: 'citizen' | 'admin' | 'operator';
+    points?: number;
+    reportsCount?: number;
+  }): Promise<User> {
+    try {
+      const userId = Math.random().toString(36).substring(7);
+      const userDoc = await UserModel.create({
+        _id: userId,
+        email: userData.email,
+        name: userData.name,
+        password: userData.password,
+        role: userData.role,
+        isActive: true,
+        points: userData.points || 0,
+        reportsCount: userData.reportsCount || 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      return User.fromPersistence({
+        id: { value: userDoc._id },
+        email: userDoc.email,
+        name: userDoc.name,
+        role: userDoc.role,
+        isActive: userDoc.isActive,
+        phone: userDoc.phone,
+        address: userDoc.address,
+        avatar: userDoc.avatar,
+        points: userDoc.points,
+        reportsCount: userDoc.reportsCount,
+        createdAt: userDoc.createdAt,
+        updatedAt: userDoc.updatedAt,
+      });
+    } catch (error) {
+      throw new Error(`Error creating user: ${error}`);
     }
   }
 
@@ -128,10 +180,91 @@ export class MongoUserRepository implements UserRepository {
         name: user.name,
         role: user.role,
         isActive: user.isActive,
+        phone: user.phone,
+        address: user.address,
+        avatar: user.avatar,
+        points: user.points,
+        reportsCount: user.reportsCount,
         updatedAt: new Date(),
       });
     } catch (error) {
       throw new Error(`Error updating user: ${error}`);
+    }
+  }
+
+  async create(user: User, password: string): Promise<User> {
+    try {
+      const userDoc = await UserModel.create({
+        _id: user.id.value,
+        email: user.email,
+        name: user.name,
+        password,
+        role: user.role,
+        isActive: true,
+        phone: user.phone,
+        address: user.address,
+        avatar: user.avatar,
+        points: user.points || 0,
+        reportsCount: user.reportsCount || 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      return User.fromPersistence({
+        id: { value: userDoc._id },
+        email: userDoc.email,
+        name: userDoc.name,
+        role: userDoc.role,
+        isActive: userDoc.isActive,
+        phone: userDoc.phone,
+        address: userDoc.address,
+        avatar: userDoc.avatar,
+        points: userDoc.points,
+        reportsCount: userDoc.reportsCount,
+        createdAt: userDoc.createdAt,
+        updatedAt: userDoc.updatedAt,
+      });
+    } catch (error) {
+      throw new Error(`Error creating user: ${error}`);
+    }
+  }
+
+  async save(user: User, password?: string): Promise<void> {
+    try {
+      const existingUser = await UserModel.findById(user.id.value);
+      
+      if (existingUser) {
+        await UserModel.findByIdAndUpdate(user.id.value, {
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          isActive: user.isActive,
+          phone: user.phone,
+          address: user.address,
+          avatar: user.avatar,
+          points: user.points,
+          reportsCount: user.reportsCount,
+          updatedAt: new Date(),
+        });
+      } else {
+        await UserModel.create({
+          _id: user.id.value,
+          email: user.email,
+          name: user.name,
+          password,
+          role: user.role,
+          isActive: true,
+          phone: user.phone,
+          address: user.address,
+          avatar: user.avatar,
+          points: user.points || 0,
+          reportsCount: user.reportsCount || 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+    } catch (error) {
+      throw new Error(`Error saving user: ${error}`);
     }
   }
 }
