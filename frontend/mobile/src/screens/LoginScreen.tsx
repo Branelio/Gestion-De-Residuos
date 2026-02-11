@@ -22,6 +22,7 @@ export default function LoginScreen({ navigation }: any) {
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -32,7 +33,7 @@ export default function LoginScreen({ navigation }: any) {
     setIsLoading(true);
     try {
       await login({ email, password });
-      
+
       // Navegar a la app
       navigation.replace('Tabs');
     } catch (error: any) {
@@ -62,10 +63,10 @@ export default function LoginScreen({ navigation }: any) {
       // El authService.register ya hace el login automático después del registro
       const { authService } = await import('../services/authService');
       const response = await authService.register({ email, password, name });
-      
+
       // Guardar el token y usuario en el contexto
       await login({ email, password });
-      
+
       Alert.alert(
         'Registro exitoso',
         'Tu cuenta ha sido creada correctamente',
@@ -149,16 +150,24 @@ export default function LoginScreen({ navigation }: any) {
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Contraseña</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••"
-                placeholderTextColor={colors.text.secondary}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                editable={!isLoading}
-              />
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="••••••••"
+                  placeholderTextColor={colors.text.secondary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '🙈'}</Text>
+                </TouchableOpacity>
+              </View>
               {isRegistering && (
                 <Text style={styles.helperText}>
                   Mínimo 6 caracteres
@@ -233,6 +242,17 @@ const styles = StyleSheet.create({
     color: colors.primary[600],
     marginBottom: spacing.xs,
   },
+  subtitle: {
+    fontSize: typography.fontSize.md,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  formContainer: {
+    backgroundColor: '#fff',
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    ...shadows.md,
+  },
   helperText: {
     fontSize: typography.fontSize.xs,
     color: colors.text.secondary,
@@ -279,6 +299,28 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     fontSize: typography.fontSize.md,
     color: colors.text.primary,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.neutral[50],
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+    borderRadius: borderRadius.md,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: spacing.md,
+    fontSize: typography.fontSize.md,
+    color: colors.text.primary,
+  },
+  eyeButton: {
+    padding: spacing.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eyeIcon: {
+    fontSize: 20,
   },
   forgotPassword: {
     alignSelf: 'flex-end',

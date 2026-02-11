@@ -8,7 +8,7 @@ const API_CONFIG = {
   // Para desarrollo local desde dispositivo físico usa tu IP local
   // Para emulador Android usa: http://10.0.2.2:3000
   // Para simulador iOS usa: http://localhost:3000
-  BASE_URL: 'http://192.168.100.4:3000', // IP local para dispositivo físico
+  BASE_URL: 'http://10.52.139.50:3000', // IP local para dispositivo físico
   TIMEOUT: 10000, // 10 segundos
 };
 
@@ -49,13 +49,13 @@ class HttpClient {
       (response) => {
         console.log(`✅ API Response: ${response.config.url} - ${response.status}`);
         console.log('📦 Response data:', JSON.stringify(response.data).substring(0, 200));
-        
+
         // Si la respuesta tiene formato {success: true, data: ...}, extraer data
         if (response.data && typeof response.data === 'object' && 'success' in response.data && 'data' in response.data) {
           console.log('🔄 Unwrapping response.data.data');
           return { ...response, data: response.data.data };
         }
-        
+
         return response;
       },
       (error) => {
@@ -131,10 +131,18 @@ class HttpClient {
   clearAuthToken() {
     this.authToken = null;
   }
+
+  /**
+   * Obtener la URL base del API
+   */
+  getBaseUrl(): string {
+    return API_CONFIG.BASE_URL;
+  }
 }
 
 // Instancia singleton del cliente HTTP
 export const httpClient = new HttpClient();
 
-// Exportar también la clase para testing
-export default HttpClient;
+// Exportar la instancia como default (para compatibilidad)
+export default httpClient;
+

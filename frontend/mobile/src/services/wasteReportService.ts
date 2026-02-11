@@ -1,75 +1,65 @@
 /**
- * Servicio adaptador de reportes de residuos
- * Mantiene compatibilidad con código existente mientras usa la API de EPAGAL internamente
+ * Servicio de reportes de residuos
+ * Conecta con el backend local para gestionar reportes ciudadanos
  */
-import { 
-  incidenciasService, 
-  TipoIncidencia, 
-  EstadoIncidencia, 
-  ZonaIncidencia,
-  IncidenciaResponse,
-  IncidenciaCreate,
-  IncidenciaStats
-} from './incidenciasService';
+import httpClient from './httpClient';
 
 /**
- * Mapeo de tipos de reporte a tipos de incidencia EPAGAL
+ * Tipos de reporte disponibles
  */
 export const ReportType = {
-  OVERFLOW: TipoIncidencia.CONTENEDOR_LLENO,
-  ILLEGAL_DUMP: TipoIncidencia.BASURA_ESPARCIDA,
-  DAMAGED_CONTAINER: TipoIncidencia.PUNTO_CRITICO,
-  MISSED_COLLECTION: TipoIncidencia.FALTA_RECOLECCION,
-  DANGEROUS: TipoIncidencia.RESIDUO_PELIGROSO,
-  OTHER: TipoIncidencia.OTRO,
+  OVERFLOW: 'OVERFLOW',
+  ILLEGAL_DUMP: 'ILLEGAL_DUMP',
+  DAMAGED_CONTAINER: 'DAMAGED_CONTAINER',
+  MISSED_COLLECTION: 'MISSED_COLLECTION',
+  DANGEROUS: 'DANGEROUS',
 } as const;
 
 /**
- * Mapeo de estados de reporte a estados de incidencia EPAGAL
+ * Estados de reporte
  */
 export const ReportStatus = {
-  PENDING: EstadoIncidencia.PENDIENTE,
-  IN_PROGRESS: EstadoIncidencia.EN_PROCESO,
-  RESOLVED: EstadoIncidencia.RESUELTA,
-  REJECTED: EstadoIncidencia.RECHAZADA,
+  PENDING: 'PENDING',
+  IN_PROGRESS: 'IN_PROGRESS',
+  RESOLVED: 'RESOLVED',
+  REJECTED: 'REJECTED',
 } as const;
 
 /**
- * Interface para reporte de residuos
+ * Interface para un reporte de residuos
  */
 export interface WasteReport {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
   type: string;
   description: string;
   coordinates: {
     latitude: number;
     longitude: number;
   };
-  address?: string;
+  address: string;
   photoUrl?: string;
   status: string;
-  severity: number;
-  zone: string;
+  verifiedByAI: boolean;
+  pointsAwarded: number;
   createdAt: string;
-  reportedAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
 }
 
 /**
  * Interface para crear un reporte
  */
 export interface CreateReportData {
-  userId: number;
+  userId: string;
   type: string;
   description: string;
   coordinates: {
     latitude: number;
     longitude: number;
   };
-  address?: string;
+  address: string;
   photoUrl?: string;
-  severity?: number;
-  zone?: string;
 }
 
 /**
@@ -84,70 +74,69 @@ export interface ReportStats {
   rejected: number;
 }
 
-class WasteReportService {
-  /**
-   * Formatear mensaje de error para el usuario
-   */
-  private formatErrorMessage(error: any): string {
-    if (error.response) {
-      // Error de respuesta del servidor
-      const status = error.response.status;
-      const detail = error.response.data?.detail;
-      
-      if (status === 400) {
-        return detail || 'Datos inv\u00e1lidos. Por favor verifica la informaci\u00f3n.';
-      } else if (status === 401) {
-        return 'No tienes autorizaci\u00f3n. Por favor inicia sesi\u00f3n.';
-      } else if (status === 404) {
-        return 'No se encontr\u00f3 el recurso solicitado.';
-      } else if (status === 500) {
-        return 'Error en el servidor. Por favor intenta m\u00e1s tarde.';
-      } else if (status === 503) {
-        return 'El servicio no est\u00e1 disponible. Por favor intenta m\u00e1s tarde.';
-      }
-      return detail || `Error del servidor (${status})`;
-    } else if (error.request) {
-      // Error de red
-      return 'No se pudo conectar al servidor. Verifica tu conexi\u00f3n a internet.';
-    } else {
-      // Otro tipo de error
-      return error.message || 'Ocurri\u00f3 un error inesperado.';
-    }
+/**
+ * Determinar zona automáticamente basado en coordenadas de Latacunga
+ */
+function determinarZona(lat: number, lon: number): string {
+  const latCenter = -0.9346;
+  const lonCenter = -78.6157;
+
+  const latDiff = lat - latCenter;
+  const lonDiff = lon - lonCenter;
+
+  const centerThreshold = 0.01;
+
+  if (Math.abs(latDiff) < centerThreshold && Math.abs(lonDiff) < centerThreshold) {
+    return 'Centro de Latacunga';
   }
 
+  const absLatDiff = Math.abs(latDiff);
+  const absLonDiff = Math.abs(lonDiff);
+
+  if (absLatDiff > absLonDiff) {
+    return latDiff > 0 ? 'Zona Norte - Latacunga' : 'Zona Sur - Latacunga';
+  } else {
+    return lonDiff > 0 ? 'Zona Este - Latacunga' : 'Zona Oeste - Latacunga';
+  }
+}
+
+class WasteReportService {
   /**
-   * Crear un nuevo reporte (usa API de EPAGAL)
+   * Crear un nuevo reporte de residuos
    */
   async createReport(data: CreateReportData): Promise<WasteReport> {
     try {
-      // Determinar zona automáticamente
-      const zona = data.zone 
-        ? (data.zone as ZonaIncidencia)
-        : incidenciasService.determinarZona(
-            data.coordinates.latitude,
-            data.coordinates.longitude
-          );
+      console.log('📤 Creando reporte en backend local:', data);
 
-      // Crear incidencia en EPAGAL
-      const incidencia = await incidenciasService.crearIncidencia({
-        tipo: data.type,
-        gravedad: data.severity || 3,
-        descripcion: data.description,
-        lat: data.coordinates.latitude,
-        lon: data.coordinates.longitude,
-        zona: zona,
-        usuario_id: data.userId,
-        foto_url: data.photoUrl,
-        ventana_inicio: new Date().toISOString(),
-        ventana_fin: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      });
+      // Determinar dirección si no se proporciona
+      const address = data.address || determinarZona(
+        data.coordinates.latitude,
+        data.coordinates.longitude
+      );
 
-      // Convertir a formato WasteReport
-      return this.convertToWasteReport(incidencia);
+      const response = await httpClient.post<{ success: boolean; data: WasteReport }>(
+        '/api/waste-reports',
+        {
+          userId: data.userId,
+          type: data.type,
+          description: data.description,
+          coordinates: data.coordinates,
+          address: address,
+          photoUrl: data.photoUrl,
+        }
+      );
+
+      console.log('✅ Reporte creado:', response);
+
+      // El interceptor de httpClient ya extrae response.data.data
+      return response as unknown as WasteReport;
     } catch (error: any) {
       console.error('❌ Error creando reporte:', error);
-      const errorMessage = this.formatErrorMessage(error);
-      throw new Error(errorMessage);
+      throw new Error(
+        error.response?.data?.error ||
+        error.message ||
+        'Error al crear el reporte. Verifica tu conexión.'
+      );
     }
   }
 
@@ -156,55 +145,52 @@ class WasteReportService {
    */
   async getAllReports(): Promise<WasteReport[]> {
     try {
-      const incidencias = await incidenciasService.listarIncidencias(0, 100);
-      return incidencias.map(inc => this.convertToWasteReport(inc));
+      const response = await httpClient.get<{ success: boolean; data: WasteReport[]; count: number }>(
+        '/api/waste-reports'
+      );
+      return response as unknown as WasteReport[];
     } catch (error: any) {
       console.error('❌ Error obteniendo reportes:', error);
-      const errorMessage = this.formatErrorMessage(error);
-      throw new Error(errorMessage);
+      throw new Error(
+        error.response?.data?.error ||
+        'Error al obtener los reportes'
+      );
     }
   }
 
   /**
    * Obtener reportes de un usuario
    */
-  async getUserReports(userId: number): Promise<WasteReport[]> {
+  async getUserReports(userId: string): Promise<WasteReport[]> {
     try {
-      const incidencias = await incidenciasService.listarIncidencias(0, 100);
-      const filtered = incidencias.filter(inc => inc.usuario_id === userId);
-      return filtered.map(inc => this.convertToWasteReport(inc));
-    } catch (error) {
+      const response = await httpClient.get<{ success: boolean; data: WasteReport[]; count: number }>(
+        `/api/waste-reports/user/${userId}`
+      );
+      return response as unknown as WasteReport[];
+    } catch (error: any) {
       console.error('❌ Error obteniendo reportes del usuario:', error);
-      throw error;
+      throw new Error(
+        error.response?.data?.error ||
+        'Error al obtener tus reportes'
+      );
     }
   }
 
   /**
-   * Obtener reportes cercanos
+   * Obtener un reporte por ID
    */
-  async getNearbyReports(
-    latitude: number,
-    longitude: number,
-    radiusKm: number = 10
-  ): Promise<WasteReport[]> {
+  async getReportById(id: string): Promise<WasteReport> {
     try {
-      const incidencias = await incidenciasService.listarIncidencias(0, 100);
-      
-      // Filtrar por distancia
-      const nearby = incidencias.filter(inc => {
-        const distance = this.calculateDistance(
-          latitude,
-          longitude,
-          inc.lat,
-          inc.lon
-        );
-        return distance <= radiusKm;
-      });
-
-      return nearby.map(inc => this.convertToWasteReport(inc));
-    } catch (error) {
-      console.error('❌ Error obteniendo reportes cercanos:', error);
-      throw error;
+      const response = await httpClient.get<{ success: boolean; data: WasteReport }>(
+        `/api/waste-reports/${id}`
+      );
+      return response as unknown as WasteReport;
+    } catch (error: any) {
+      console.error('❌ Error obteniendo reporte:', error);
+      throw new Error(
+        error.response?.data?.error ||
+        'Error al obtener el reporte'
+      );
     }
   }
 
@@ -213,117 +199,39 @@ class WasteReportService {
    */
   async getStats(): Promise<ReportStats> {
     try {
-      const stats = await incidenciasService.obtenerEstadisticas();
-      return {
-        total: stats.total_incidencias,
-        byStatus: {
-          PENDIENTE: stats.pendientes,
-          EN_PROCESO: stats.en_proceso,
-          RESUELTA: stats.resueltas,
-          RECHAZADA: stats.rechazadas,
-        },
-        pending: stats.pendientes,
-        inProgress: stats.en_proceso,
-        resolved: stats.resueltas,
-        rejected: stats.rechazadas,
-      };
-    } catch (error) {
+      const response = await httpClient.get<{ success: boolean; data: ReportStats }>(
+        '/api/waste-reports/stats'
+      );
+      return response as unknown as ReportStats;
+    } catch (error: any) {
       console.error('❌ Error obteniendo estadísticas:', error);
-      throw error;
+      throw new Error(
+        error.response?.data?.error ||
+        'Error al obtener estadísticas'
+      );
     }
   }
 
   /**
-   * Obtener un reporte por ID
+   * Obtener reportes cercanos a una ubicación
    */
-  async getReportById(id: number): Promise<WasteReport> {
+  async getNearbyReports(
+    latitude: number,
+    longitude: number,
+    radiusKm: number = 10
+  ): Promise<WasteReport[]> {
     try {
-      const incidencia = await incidenciasService.obtenerIncidencia(id);
-      return this.convertToWasteReport(incidencia);
-    } catch (error) {
-      console.error('❌ Error obteniendo reporte:', error);
-      throw error;
+      const response = await httpClient.get<{ success: boolean; data: WasteReport[]; count: number }>(
+        `/api/waste-reports/nearby?lat=${latitude}&lng=${longitude}&radius=${radiusKm}`
+      );
+      return response as unknown as WasteReport[];
+    } catch (error: any) {
+      console.error('❌ Error obteniendo reportes cercanos:', error);
+      throw new Error(
+        error.response?.data?.error ||
+        'Error al buscar reportes cercanos'
+      );
     }
-  }
-
-  /**
-   * Actualizar un reporte
-   */
-  async updateReport(id: number, data: Partial<CreateReportData>): Promise<WasteReport> {
-    try {
-      const incidencia = await incidenciasService.actualizarIncidencia(id, {
-        tipo: data.type,
-        gravedad: data.severity,
-        descripcion: data.description,
-        foto_url: data.photoUrl,
-      });
-      return this.convertToWasteReport(incidencia);
-    } catch (error) {
-      console.error('❌ Error actualizando reporte:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Eliminar un reporte
-   */
-  async deleteReport(id: number): Promise<void> {
-    try {
-      await incidenciasService.eliminarIncidencia(id);
-    } catch (error) {
-      console.error('❌ Error eliminando reporte:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Convertir IncidenciaResponse a WasteReport
-   */
-  private convertToWasteReport(incidencia: any): WasteReport {
-    return {
-      id: incidencia.id,
-      userId: incidencia.usuario_id,
-      type: incidencia.tipo,
-      description: incidencia.descripcion,
-      coordinates: {
-        latitude: incidencia.lat,
-        longitude: incidencia.lon,
-      },
-      address: incidencia.zona,
-      photoUrl: incidencia.foto_url,
-      status: incidencia.estado,
-      severity: incidencia.gravedad,
-      zone: incidencia.zona,
-      createdAt: incidencia.created_at,
-      reportedAt: incidencia.reportado_en,
-    };
-  }
-
-  /**
-   * Calcular distancia entre dos coordenadas (fórmula de Haversine)
-   */
-  private calculateDistance(
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ): number {
-    const R = 6371; // Radio de la Tierra en km
-    const dLat = this.deg2rad(lat2 - lat1);
-    const dLon = this.deg2rad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.deg2rad(lat1)) *
-        Math.cos(this.deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-    return distance;
-  }
-
-  private deg2rad(deg: number): number {
-    return deg * (Math.PI / 180);
   }
 }
 

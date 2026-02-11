@@ -4,6 +4,20 @@
         "git checkout": true,
         "git merge": true,
         "npm test": true,
-        "docker ps": true
+        "docker ps": true,
+        "/^python generate_thesis\\.py$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "&": true,
+        "Get-Item": true,
+        "/^python generate_thesis_v2\\.py$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^powershell -Command \"Get-Item 'Tesis_Sistema_Gestion_Residuos_COMPLETA\\.docx' \\| Select-Object Name, Length, LastWriteTime\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     }
 }

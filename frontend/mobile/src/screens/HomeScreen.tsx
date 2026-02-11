@@ -56,8 +56,8 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView 
-        style={styles.container} 
+      <ScrollView
+        style={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -74,7 +74,7 @@ export default function HomeScreen({ navigation }: any) {
               <Text style={styles.headerSubtitle}>Gestión Inteligente de Residuos</Text>
             </View>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.profileButton}
             onPress={() => navigation.navigate('Profile')}
           >
@@ -126,6 +126,78 @@ export default function HomeScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
+        {/* Nuevas Acciones */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: '#10B981' }]}
+            onPress={() => navigation.navigate('Education')}
+          >
+            <View style={styles.actionIcon}>
+              <Text style={styles.actionIconText}>📚</Text>
+            </View>
+            <Text style={styles.actionTitle}>Aprende Reciclaje</Text>
+            <Text style={styles.actionDescription}>
+              Tips y guías para reciclar correctamente
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: '#8B5CF6' }]}
+            onPress={() => navigation.navigate('Gamification')}
+          >
+            <View style={styles.actionIcon}>
+              <Text style={styles.actionIconText}>🏆</Text>
+            </View>
+            <Text style={styles.actionTitle}>Mis Logros</Text>
+            <Text style={styles.actionDescription}>
+              Puntos, badges y ranking
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: '#F59E0B' }]}
+            onPress={() => navigation.navigate('MyRoutes')}
+          >
+            <View style={styles.actionIcon}>
+              <Text style={styles.actionIconText}>🚛</Text>
+            </View>
+            <Text style={styles.actionTitle}>Rutas de Recolección</Text>
+            <Text style={styles.actionDescription}>
+              Horarios y puntos cercanos
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: '#06B6D4' }]}
+            onPress={() => navigation.navigate('Stats')}
+          >
+            <View style={styles.actionIcon}>
+              <Text style={styles.actionIconText}>📊</Text>
+            </View>
+            <Text style={styles.actionTitle}>Mi Impacto</Text>
+            <Text style={styles.actionDescription}>
+              Estadísticas ambientales
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: '#EC4899', flex: 1 }]}
+            onPress={() => navigation.navigate('Activity')}
+          >
+            <View style={styles.actionIcon}>
+              <Text style={styles.actionIconText}>📜</Text>
+            </View>
+            <Text style={styles.actionTitle}>Historial de Actividad</Text>
+            <Text style={styles.actionDescription}>
+              Revisa tus acciones y puntos ganados
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Estadísticas */}
         <Text style={styles.sectionTitle}>Impacto de la Comunidad</Text>
         <View style={styles.statsContainer}>
@@ -149,7 +221,7 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>💡 ¿Sabías que?</Text>
           <Text style={styles.infoText}>
-            Al reportar correctamente los residuos ayudas a optimizar las rutas de recolección, 
+            Al reportar correctamente los residuos ayudas a optimizar las rutas de recolección,
             reduciendo el consumo de combustible en un 11.6% y las distancias en un 9.4%.
           </Text>
         </View>

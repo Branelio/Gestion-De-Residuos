@@ -15,6 +15,11 @@ import ReportScreen from './src/screens/ReportScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import PointsListScreen from './src/screens/PointsListScreen';
+import EducationScreen from './src/screens/EducationScreen';
+import GamificationScreen from './src/screens/GamificationScreen';
+import MyRoutesScreen from './src/screens/MyRoutesScreen';
+import StatsScreen from './src/screens/StatsScreen';
+import ActivityScreen from './src/screens/ActivityScreen';
 import { theme } from './src/theme';
 
 const Tab = createBottomTabNavigator();
@@ -57,7 +62,7 @@ function TabNavigator() {
         },
         tabBarIcon: ({ focused, color }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'home';
-          
+
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Map') {
@@ -83,29 +88,29 @@ function TabNavigator() {
         },
       })}
     >
-      <Tab.Screen 
-        name="Home" 
+      <Tab.Screen
+        name="Home"
         component={HomeScreen}
         options={{
           tabBarLabel: 'Inicio',
         }}
       />
-      <Tab.Screen 
-        name="Map" 
+      <Tab.Screen
+        name="Map"
         component={MapScreen}
         options={{
           tabBarLabel: 'Mapa',
         }}
       />
-      <Tab.Screen 
-        name="Report" 
+      <Tab.Screen
+        name="Report"
         component={ReportScreen}
         options={{
           tabBarLabel: 'Reportar',
         }}
       />
-      <Tab.Screen 
-        name="Profile" 
+      <Tab.Screen
+        name="Profile"
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Perfil',
@@ -126,6 +131,11 @@ export default function App() {
             <Stack.Screen name="Tabs" component={TabNavigator} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="PointsList" component={PointsListScreen} />
+            <Stack.Screen name="Education" component={EducationScreen} />
+            <Stack.Screen name="Gamification" component={GamificationScreen} />
+            <Stack.Screen name="MyRoutes" component={MyRoutesScreen} />
+            <Stack.Screen name="Stats" component={StatsScreen} />
+            <Stack.Screen name="Activity" component={ActivityScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </AuthProvider>

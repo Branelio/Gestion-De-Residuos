@@ -1,10 +1,12 @@
 import express, { Application } from 'express';
 import cors from 'cors';
+import path from 'path';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import { connectDatabase } from './infrastructure/config/database';
 import { swaggerSpec } from './infrastructure/config/swagger';
 import apiRoutes from './infrastructure/http/routes/api';
+import uploadRoutes from './infrastructure/http/routes/upload';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -42,7 +44,7 @@ app.use(express.urlencoded({ extended: true }));
  *                   format: date-time
  */
 app.get('/health', (_req, res) => {
-  res.json({ 
+  res.json({
     status: 'OK',
     message: 'Latacunga Waste Management API',
     timestamp: new Date().toISOString(),
@@ -54,6 +56,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'Latacunga Waste Management API',
 }));
+
+// Servir carpeta de uploads como estática
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Upload Routes
+app.use('/api/upload', uploadRoutes);
 
 // API Routes
 app.use('/api', apiRoutes);
@@ -69,7 +77,7 @@ async function startServer() {
   try {
     // Conectar a MongoDB
     await connectDatabase();
-    
+
     // Iniciar servidor Express
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);

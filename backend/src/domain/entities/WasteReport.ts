@@ -22,6 +22,7 @@ export enum ReportType {
   ILLEGAL_DUMP = 'ILLEGAL_DUMP', // Botadero ilegal
   DAMAGED_CONTAINER = 'DAMAGED_CONTAINER', // Contenedor dañado
   MISSED_COLLECTION = 'MISSED_COLLECTION', // Recolección no realizada
+  DANGEROUS = 'DANGEROUS', // Residuos peligrosos
 }
 
 export interface ReportProps {
@@ -148,6 +149,7 @@ export class WasteReport {
       [ReportType.ILLEGAL_DUMP]: 15,
       [ReportType.DAMAGED_CONTAINER]: 8,
       [ReportType.MISSED_COLLECTION]: 5,
+      [ReportType.DANGEROUS]: 20, // Mayor recompensa por reportar residuos peligrosos
     };
     return basePoints[this.props.type] || 0;
   }

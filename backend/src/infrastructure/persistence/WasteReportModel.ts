@@ -39,7 +39,7 @@ const wasteReportSchema = new Schema<IWasteReportDocument>(
     },
     type: {
       type: String,
-      enum: ['OVERFLOW', 'ILLEGAL_DUMP', 'DAMAGED_CONTAINER', 'MISSED_COLLECTION'],
+      enum: ['OVERFLOW', 'ILLEGAL_DUMP', 'DAMAGED_CONTAINER', 'MISSED_COLLECTION', 'DANGEROUS'],
       required: true,
     },
     description: {
