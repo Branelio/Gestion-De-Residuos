@@ -33,33 +33,33 @@ interface ReportForm {
 }
 
 const reportTypes: Array<{ type: string; label: string; icon: string; description: string }> = [
-  { 
-    type: ReportType.OVERFLOW, 
-    label: 'Contenedor Lleno', 
+  {
+    type: ReportType.OVERFLOW,
+    label: 'Contenedor Lleno',
     icon: '🗑️',
     description: 'El contenedor está desbordando'
   },
-  { 
-    type: ReportType.ILLEGAL_DUMP, 
-    label: 'Basurero Ilegal', 
+  {
+    type: ReportType.ILLEGAL_DUMP,
+    label: 'Basurero Ilegal',
     icon: '🚫',
     description: 'Basura acumulada en lugar inadecuado'
   },
-  { 
-    type: ReportType.DAMAGED_CONTAINER, 
-    label: 'Punto Crítico', 
+  {
+    type: ReportType.DAMAGED_CONTAINER,
+    label: 'Punto Crítico',
     icon: '🔧',
     description: 'Zona con problemas graves de basura'
   },
-  { 
-    type: ReportType.MISSED_COLLECTION, 
-    label: 'Recolección Perdida', 
+  {
+    type: ReportType.MISSED_COLLECTION,
+    label: 'Recolección Perdida',
     icon: '📅',
     description: 'No pasó el camión recolector'
   },
-  { 
-    type: ReportType.DANGEROUS, 
-    label: 'Residuo Peligroso', 
+  {
+    type: ReportType.DANGEROUS,
+    label: 'Residuo Peligroso',
     icon: '⚠️',
     description: 'Residuos peligrosos o tóxicos'
   }
@@ -67,7 +67,7 @@ const reportTypes: Array<{ type: string; label: string; icon: string; descriptio
 
 export default function ReportScreen({ navigation }: ReportScreenProps) {
   const userId = 1; // TODO: Obtener del contexto de autenticación
-  
+
   const [form, setForm] = useState<ReportForm>({
     type: null,
     description: '',
@@ -163,15 +163,17 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
           'Por favor habilita los servicios de ubicación (GPS) en la configuración de tu dispositivo para continuar.',
           [
             { text: 'Cancelar', style: 'cancel' },
-            { text: 'Abrir Configuración', onPress: () => {
-              // En dispositivos reales, esto debería abrir la configuración
-              Alert.alert('Instrucciones', 
-                '1. Ve a Configuración del dispositivo\n' +
-                '2. Busca "Ubicación" o "Location"\n' +
-                '3. Activa los servicios de ubicación\n' +
-                '4. Regresa a la app e intenta nuevamente'
-              );
-            }}
+            {
+              text: 'Abrir Configuración', onPress: () => {
+                // En dispositivos reales, esto debería abrir la configuración
+                Alert.alert('Instrucciones',
+                  '1. Ve a Configuración del dispositivo\n' +
+                  '2. Busca "Ubicación" o "Location"\n' +
+                  '3. Activa los servicios de ubicación\n' +
+                  '4. Regresa a la app e intenta nuevamente'
+                );
+              }
+            }
           ]
         );
         setIsLoadingLocation(false);
@@ -196,8 +198,6 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
       console.log('📍 Obteniendo ubicación...');
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
-        maximumAge: 10000, // Aceptar ubicación de hasta 10 segundos atrás
-        timeout: 15000, // Esperar hasta 15 segundos
       });
 
       console.log('✅ Ubicación obtenida:', location.coords);
@@ -209,16 +209,16 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
           longitude: location.coords.longitude
         }
       });
-      
+
       Alert.alert(
-        '✅ Ubicación Capturada', 
+        '✅ Ubicación Capturada',
         `Lat: ${location.coords.latitude.toFixed(6)}\nLon: ${location.coords.longitude.toFixed(6)}`
       );
     } catch (error: any) {
       console.error('Error al obtener ubicación:', error);
-      
+
       let errorMessage = 'No se pudo obtener tu ubicación. ';
-      
+
       if (error.code === 'E_LOCATION_SERVICES_DISABLED') {
         errorMessage += 'Los servicios de ubicación están deshabilitados.';
       } else if (error.code === 'E_LOCATION_UNAVAILABLE') {
@@ -228,9 +228,9 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
       } else {
         errorMessage += 'Verifica que el GPS esté habilitado y tengas buena señal.';
       }
-      
+
       Alert.alert(
-        'Error de Ubicación', 
+        'Error de Ubicación',
         errorMessage + '\n\nConsejos:\n• Activa el GPS en configuración\n• Sal al exterior para mejor señal\n• Reinicia el dispositivo',
         [
           { text: 'Cancelar', style: 'cancel' },
@@ -249,12 +249,12 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
       latitude: -0.9346, // Centro de Latacunga
       longitude: -78.6157,
     };
-    
+
     setForm({
       ...form,
       location: mockLocation
     });
-    
+
     Alert.alert(
       '⚠️ Ubicación de Prueba',
       `Usando ubicación del centro de Latacunga\nLat: ${mockLocation.latitude}\nLon: ${mockLocation.longitude}\n\nEsto es solo para pruebas.`
@@ -293,10 +293,10 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
         latitude: form.location!.latitude,
         longitude: form.location!.longitude
       });
-      
+
       // Crear reporte usando la API de EPAGAL
       const reportData = {
-        userId: userId,
+        userId: String(userId),
         type: form.type!,
         description: form.description,
         coordinates: {
@@ -304,14 +304,13 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
           longitude: form.location!.longitude,
         },
         photoUrl: form.photoUri || undefined,
-        severity: form.severity,
-        address: form.address || undefined,
+        address: form.address || '',
       };
 
       console.log('📦 Datos del reporte:', JSON.stringify(reportData, null, 2));
-      
+
       const result = await wasteReportService.createReport(reportData);
-      
+
       console.log('✅ ========== REPORTE CREADO EXITOSAMENTE ==========');
       console.log('🆔 ID de incidencia:', result.id);
       console.log('📍 Ubicación guardada:', {
@@ -325,7 +324,6 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
         `¡Gracias por contribuir!\n\n` +
         `Incidencia #${result.id} registrada exitosamente\n` +
         `Ubicación: ${result.coordinates.latitude.toFixed(6)}, ${result.coordinates.longitude.toFixed(6)}\n` +
-        `Zona: ${result.zone}\n` +
         `Estado: ${result.status}`,
         [
           {
@@ -352,7 +350,7 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
       console.error('Mensaje:', error.message);
       console.error('Detalles:', error);
       Alert.alert(
-        '❌ Error al Enviar', 
+        '❌ Error al Enviar',
         error.message || 'No se pudo enviar el reporte. Verifica tu conexión a internet e intenta nuevamente.'
       );
     } finally {
@@ -456,7 +454,7 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
                   Esta ubicación será enviada a la API de EPAGAL
                 </Text>
               </View>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={getCurrentLocation}
                 style={styles.updateLocationButton}
               >
@@ -702,10 +700,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.neutral[600]
   },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: colors.neutral[500],
+    marginBottom: spacing.sm,
+    lineHeight: 20
+  },
+  locationNote: {
+    fontSize: 12,
+    color: colors.neutral[500],
+    marginTop: 4,
+    fontStyle: 'italic'
+  },
+  updateLocationButton: {
+    backgroundColor: colors.primary[100],
+    borderRadius: 8,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
   updateLocationText: {
     color: colors.primary[600],
     fontWeight: '600',
     fontSize: 14
+  },
+  locationButtonSubtext: {
+    fontSize: 12,
+    color: colors.neutral[500],
+    marginTop: 2
   },
   submitSection: {
     padding: spacing.lg,
