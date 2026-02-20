@@ -11,16 +11,19 @@ import {
   Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { wasteReportService, WasteReport } from '../services/wasteReportService';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
+import { useAuth } from '../contexts/AuthContext';
 
 interface MyReportsScreenProps {
   navigation: any;
 }
 
 export default function MyReportsScreen({ navigation }: MyReportsScreenProps) {
-  const userId = 1; // TODO: Obtener del contexto de autenticación
-  
+  const { user } = useAuth();
+  const userId = user?.id || '1';
+
   const [reports, setReports] = useState<WasteReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -41,22 +44,22 @@ export default function MyReportsScreen({ navigation }: MyReportsScreenProps) {
     try {
       setIsLoading(true);
       console.log('📥 Cargando reportes del usuario:', userId);
-      
+
       const userReports = await wasteReportService.getUserReports(userId);
       setReports(userReports);
-      
+
       // Calcular estadísticas
       const pending = userReports.filter(r => r.status === 'PENDIENTE').length;
       const inProgress = userReports.filter(r => r.status === 'EN_PROCESO').length;
       const resolved = userReports.filter(r => r.status === 'RESUELTA').length;
-      
+
       setStats({
         total: userReports.length,
         pending,
         inProgress,
         resolved
       });
-      
+
       console.log('✅ Reportes cargados:', userReports.length);
     } catch (error: any) {
       console.error('❌ Error cargando reportes:', error);
@@ -76,38 +79,38 @@ export default function MyReportsScreen({ navigation }: MyReportsScreenProps) {
   // Obtener icono según el tipo
   const getTypeIcon = (type: string): string => {
     const icons: Record<string, string> = {
-      'CONTENEDOR_LLENO': '🗑️',
-      'BASURA_ESPARCIDA': '🚫',
-      'PUNTO_CRITICO': '🔧',
-      'FALTA_RECOLECCION': '📅',
-      'RESIDUO_PELIGROSO': '⚠️',
-      'OTRO': '📝'
+      'CONTENEDOR_LLENO': 'trash',
+      'BASURA_ESPARCIDA': 'close-circle',
+      'PUNTO_CRITICO': 'build',
+      'FALTA_RECOLECCION': 'calendar',
+      'RESIDUO_PELIGROSO': 'warning',
+      'OTRO': 'create'
     };
-    return icons[type] || '📝';
+    return icons[type] || 'create';
   };
 
   // Obtener color y etiqueta según el estado
   const getStatusInfo = (status: string) => {
     const statusMap: Record<string, { label: string; color: string; bgColor: string }> = {
-      'PENDIENTE': { 
-        label: 'Pendiente', 
-        color: colors.warning[700], 
-        bgColor: colors.warning[50] 
+      'PENDIENTE': {
+        label: 'Pendiente',
+        color: colors.warning[700],
+        bgColor: colors.warning[50]
       },
-      'EN_PROCESO': { 
-        label: 'En Proceso', 
-        color: colors.info[700], 
-        bgColor: colors.info[50] 
+      'EN_PROCESO': {
+        label: 'En Proceso',
+        color: colors.info[700],
+        bgColor: colors.info[50]
       },
-      'RESUELTA': { 
-        label: 'Resuelta', 
-        color: colors.success[700], 
-        bgColor: colors.success[50] 
+      'RESUELTA': {
+        label: 'Resuelta',
+        color: colors.success[700],
+        bgColor: colors.success[50]
       },
-      'RECHAZADA': { 
-        label: 'Rechazada', 
-        color: colors.error, 
-        bgColor: '#FFEBEE' 
+      'RECHAZADA': {
+        label: 'Rechazada',
+        color: colors.error,
+        bgColor: '#FFEBEE'
       }
     };
     return statusMap[status] || statusMap['PENDIENTE'];
@@ -119,7 +122,7 @@ export default function MyReportsScreen({ navigation }: MyReportsScreenProps) {
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       return 'Hoy';
     } else if (diffDays === 1) {
@@ -127,8 +130,8 @@ export default function MyReportsScreen({ navigation }: MyReportsScreenProps) {
     } else if (diffDays < 7) {
       return `Hace ${diffDays} días`;
     } else {
-      return date.toLocaleDateString('es-EC', { 
-        day: 'numeric', 
+      return date.toLocaleDateString('es-EC', {
+        day: 'numeric',
         month: 'short',
         year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
       });
@@ -138,7 +141,7 @@ export default function MyReportsScreen({ navigation }: MyReportsScreenProps) {
   // Renderizar tarjeta de reporte
   const renderReportCard = ({ item }: { item: WasteReport }) => {
     const statusInfo = getStatusInfo(item.status);
-    
+
     return (
       <TouchableOpacity
         style={styles.reportCard}
@@ -157,7 +160,7 @@ export default function MyReportsScreen({ navigation }: MyReportsScreenProps) {
       >
         <View style={styles.reportHeader}>
           <View style={styles.reportTitleRow}>
-            <Text style={styles.reportIcon}>{getTypeIcon(item.type)}</Text>
+            <Ionicons name={getTypeIcon(item.type) as any} size={22} color={colors.primary[600]} />
             <View style={styles.reportTitleContainer}>
               <Text style={styles.reportId}>Reporte #{item.id}</Text>
               <Text style={styles.reportZone}>📍 {item.zone}</Text>
@@ -169,19 +172,17 @@ export default function MyReportsScreen({ navigation }: MyReportsScreenProps) {
             </Text>
           </View>
         </View>
-        
+
         <Text style={styles.reportDescription} numberOfLines={2}>
           {item.description}
         </Text>
-        
+
         <View style={styles.reportFooter}>
           <View style={styles.severityContainer}>
             <Text style={styles.severityLabel}>Gravedad:</Text>
             <View style={styles.severityStars}>
               {[1, 2, 3, 4, 5].map(star => (
-                <Text key={star} style={styles.star}>
-                  {star <= item.severity ? '⭐' : '☆'}
-                </Text>
+                <Ionicons key={star} name={star <= (item.severity ?? 1) ? 'star' : 'star-outline'} size={14} color={star <= (item.severity ?? 1) ? '#F59E0B' : colors.neutral[400]} />
               ))}
             </View>
           </View>
@@ -196,7 +197,7 @@ export default function MyReportsScreen({ navigation }: MyReportsScreenProps) {
   // Renderizar mensaje vacío
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>📋</Text>
+      <Ionicons name="document-text" size={48} color={colors.neutral[400]} />
       <Text style={styles.emptyTitle}>No tienes reportes</Text>
       <Text style={styles.emptyText}>
         Aún no has creado ningún reporte. Empieza reportando problemas de residuos en tu zona.
@@ -205,7 +206,7 @@ export default function MyReportsScreen({ navigation }: MyReportsScreenProps) {
         style={styles.createButton}
         onPress={() => navigation.navigate('Report')}
       >
-        <Text style={styles.createButtonText}>➕ Crear Primer Reporte</Text>
+        <Text style={styles.createButtonText}><Ionicons name="add-circle" size={16} color="#fff" /> Crear Primer Reporte</Text>
       </TouchableOpacity>
     </View>
   );
@@ -226,7 +227,10 @@ export default function MyReportsScreen({ navigation }: MyReportsScreenProps) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Atrás</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Ionicons name="arrow-back" size={18} color={colors.primary[600]} />
+            <Text style={styles.backButtonText}>Atrás</Text>
+          </View>
         </TouchableOpacity>
         <Text style={styles.title}>Mis Reportes</Text>
       </View>

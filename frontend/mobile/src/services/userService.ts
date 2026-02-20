@@ -92,17 +92,39 @@ class UserService {
     totalPoints: number;
   }> {
     try {
-      // TODO: Implementar endpoint real cuando esté disponible
-      // Por ahora retornamos datos de ejemplo
+      // Obtener reportes del usuario
+      const reportsResponse = await httpClient.get<{ success: boolean; data: any[]; count: number }>(
+        `/api/waste-reports/user/${userId}`
+      );
+
+      const reports = (reportsResponse as any)?.data || [];
+      const totalReports = Array.isArray(reports) ? reports.length : 0;
+      const resolvedReports = Array.isArray(reports) ? reports.filter((r: any) => r.status === 'RESOLVED').length : 0;
+      const pendingReports = Array.isArray(reports) ? reports.filter((r: any) => r.status === 'PENDING').length : 0;
+
+      // Obtener puntos de gamificación
+      let totalPoints = 0;
+      try {
+        const gamResponse = await httpClient.get<any>(`/api/gamification/profile/${userId}`);
+        totalPoints = (gamResponse as any)?.data?.totalPoints || (gamResponse as any)?.totalPoints || 0;
+      } catch {
+        // Si no hay perfil de gamificación, usar 0
+      }
+
+      return {
+        totalReports,
+        resolvedReports,
+        pendingReports,
+        totalPoints,
+      };
+    } catch (error) {
+      console.error('❌ Error obteniendo estadísticas:', error);
       return {
         totalReports: 0,
         resolvedReports: 0,
         pendingReports: 0,
         totalPoints: 0,
       };
-    } catch (error) {
-      console.error('❌ Error obteniendo estadísticas:', error);
-      throw error;
     }
   }
 }

@@ -9,6 +9,7 @@ import {
     RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
 import {
     gamificationService,
@@ -16,13 +17,15 @@ import {
     LeaderboardEntry,
     Achievement
 } from '../services/gamificationService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface GamificationScreenProps {
     navigation: any;
 }
 
 export default function GamificationScreen({ navigation }: GamificationScreenProps) {
-    const userId = '1'; // TODO: Obtener del contexto de autenticación
+    const { user } = useAuth();
+    const userId = user?.id || '1';
 
     const [profile, setProfile] = useState<GamificationProfile | null>(null);
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -147,7 +150,10 @@ export default function GamificationScreen({ navigation }: GamificationScreenPro
     const renderLeaderboardTab = () => (
         <View style={styles.tabContent}>
             <View style={styles.leaderboardHeader}>
-                <Text style={styles.leaderboardTitle}>🏆 Top 10 Ciudadanos</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="trophy" size={22} color="#F59E0B" />
+                    <Text style={styles.leaderboardTitle}>Top 10 Ciudadanos</Text>
+                </View>
                 <Text style={styles.leaderboardSubtitle}>Los más comprometidos con Latacunga</Text>
             </View>
 
@@ -168,7 +174,7 @@ export default function GamificationScreen({ navigation }: GamificationScreenPro
                                 index === 2 && styles.rankBronze,
                             ]}>
                                 <Text style={styles.rankText}>
-                                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${entry.rank}`}
+                                    {index === 0 ? <Ionicons name="medal" size={16} color="#F59E0B" /> : index === 1 ? <Ionicons name="medal" size={16} color="#C0C0C0" /> : index === 2 ? <Ionicons name="medal" size={16} color="#CD7F32" /> : <Text>{`#${entry.rank}`}</Text>}
                                 </Text>
                             </View>
                             <View style={styles.leaderboardInfo}>
@@ -192,7 +198,10 @@ export default function GamificationScreen({ navigation }: GamificationScreenPro
     const renderAchievementsTab = () => (
         <View style={styles.tabContent}>
             <View style={styles.achievementsHeader}>
-                <Text style={styles.achievementsTitle}>🎖️ Logros Disponibles</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="ribbon" size={22} color="#8B5CF6" />
+                    <Text style={styles.achievementsTitle}>Logros Disponibles</Text>
+                </View>
                 <Text style={styles.achievementsSubtitle}>
                     {profile?.badges?.length || 0} / {achievements.length} desbloqueados
                 </Text>
@@ -232,7 +241,7 @@ export default function GamificationScreen({ navigation }: GamificationScreenPro
                                 </View>
                             </View>
                             {isUnlocked && (
-                                <Text style={styles.unlockedBadge}>✅</Text>
+                                <Ionicons name="checkmark-circle" size={22} color="#10B981" />
                             )}
                         </View>
                     );
@@ -253,9 +262,15 @@ export default function GamificationScreen({ navigation }: GamificationScreenPro
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Text style={styles.backButtonText}>← Atrás</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Ionicons name="arrow-back" size={18} color={colors.primary[600]} />
+                            <Text style={styles.backButtonText}>Atrás</Text>
+                        </View>
                     </TouchableOpacity>
-                    <Text style={styles.title}>🏆 Mis Logros</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Ionicons name="trophy" size={24} color={colors.neutral[900]} />
+                        <Text style={styles.title}>Mis Logros</Text>
+                    </View>
                     <Text style={styles.subtitle}>
                         Gana puntos y desbloquea recompensas
                     </Text>

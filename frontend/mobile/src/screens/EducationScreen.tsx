@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
 
 interface EducationScreenProps {
@@ -121,9 +122,15 @@ export default function EducationScreen({ navigation }: EducationScreenProps) {
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Text style={styles.backButtonText}>← Atrás</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Ionicons name="arrow-back" size={18} color={colors.primary[600]} />
+                            <Text style={styles.backButtonText}>Atrás</Text>
+                        </View>
                     </TouchableOpacity>
-                    <Text style={styles.title}>📚 Educación Ambiental</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Ionicons name="book" size={24} color={colors.neutral[900]} />
+                        <Text style={styles.title}>Educación Ambiental</Text>
+                    </View>
                     <Text style={styles.subtitle}>
                         Aprende sobre reciclaje y cuida el medio ambiente
                     </Text>
@@ -131,7 +138,7 @@ export default function EducationScreen({ navigation }: EducationScreenProps) {
 
                 {/* Intro Card */}
                 <View style={styles.introCard}>
-                    <Text style={styles.introIcon}>🌿</Text>
+                    <Ionicons name="leaf" size={36} color={colors.primary[600]} />
                     <Text style={styles.introText}>
                         ¡Bienvenido! Aquí encontrarás información valiosa para contribuir a un Latacunga más limpio y sostenible.
                     </Text>
@@ -150,9 +157,7 @@ export default function EducationScreen({ navigation }: EducationScreenProps) {
                                 onPress={() => toggleCategory(category.id)}
                             >
                                 <Text style={styles.categoryTitle}>{category.title}</Text>
-                                <Text style={styles.expandIcon}>
-                                    {expandedCategory === category.id ? '▼' : '▶'}
-                                </Text>
+                                <Ionicons name={expandedCategory === category.id ? 'chevron-down' : 'chevron-forward'} size={16} color={colors.neutral[500]} />
                             </TouchableOpacity>
 
                             {expandedCategory === category.id && (
@@ -170,7 +175,7 @@ export default function EducationScreen({ navigation }: EducationScreenProps) {
 
                 {/* Quiz Banner */}
                 <TouchableOpacity style={styles.quizBanner}>
-                    <Text style={styles.quizIcon}>🧠</Text>
+                    <Ionicons name="bulb" size={36} color="#fff" />
                     <View style={styles.quizTextContainer}>
                         <Text style={styles.quizTitle}>¿Cuánto sabes sobre reciclaje?</Text>
                         <Text style={styles.quizSubtitle}>Próximamente: Quiz Interactivo</Text>
@@ -179,9 +184,10 @@ export default function EducationScreen({ navigation }: EducationScreenProps) {
 
                 {/* Footer */}
                 <View style={styles.footer}>
-                    <Text style={styles.footerText}>
-                        🌱 Cada pequeña acción cuenta para un futuro más verde
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <Ionicons name="leaf" size={16} color={colors.neutral[600]} />
+                        <Text style={styles.footerText}>Cada pequeña acción cuenta para un futuro más verde</Text>
+                    </View>
                 </View>
             </ScrollView>
         </SafeAreaView>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Platform } from 'react-native';
+import { View, Platform, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -7,7 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-import { AuthProvider } from './src/contexts/AuthContext';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import MapScreen from './src/screens/MapScreen';
@@ -20,6 +20,7 @@ import GamificationScreen from './src/screens/GamificationScreen';
 import MyRoutesScreen from './src/screens/MyRoutesScreen';
 import StatsScreen from './src/screens/StatsScreen';
 import ActivityScreen from './src/screens/ActivityScreen';
+import MyReportsScreen from './src/screens/MyReportsScreen';
 import { theme } from './src/theme';
 
 const Tab = createBottomTabNavigator();
@@ -120,14 +121,77 @@ function TabNavigator() {
   );
 }
 
-export default function App() {
+/**
+ * Pantalla de carga mientras se verifica la sesión guardada
+ */
+function SplashScreen() {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <NavigationContainer>
-          <StatusBar style="auto" />
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Login" component={LoginScreen} />
+    <View style={splashStyles.container}>
+      <View style={splashStyles.content}>
+        <Ionicons name="leaf" size={80} color={theme.colors.primary[500]} />
+        <Text style={splashStyles.title}>Latacunga</Text>
+        <Text style={splashStyles.subtitle}>Gestión de Residuos</Text>
+        <ActivityIndicator
+          size="large"
+          color={theme.colors.primary[500]}
+          style={splashStyles.loader}
+        />
+        <Text style={splashStyles.loadingText}>Verificando sesión...</Text>
+      </View>
+    </View>
+  );
+}
+
+const splashStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: theme.colors.primary[700],
+    marginTop: 16,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: theme.colors.neutral[600],
+    marginTop: 4,
+  },
+  loader: {
+    marginTop: 40,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: theme.colors.neutral[500],
+    marginTop: 12,
+  },
+});
+
+/**
+ * Navegación raíz que decide entre Login y la app
+ * basándose en el estado de autenticación persistido
+ */
+function RootNavigator() {
+  const { isAuthenticated, loading } = useAuth();
+
+  // Mientras carga datos de AsyncStorage, mostrar splash
+  if (loading) {
+    return <SplashScreen />;
+  }
+
+  return (
+    <NavigationContainer>
+      <StatusBar style="auto" />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated ? (
+          // Rutas autenticadas
+          <>
             <Stack.Screen name="Tabs" component={TabNavigator} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="PointsList" component={PointsListScreen} />
@@ -136,8 +200,22 @@ export default function App() {
             <Stack.Screen name="MyRoutes" component={MyRoutesScreen} />
             <Stack.Screen name="Stats" component={StatsScreen} />
             <Stack.Screen name="Activity" component={ActivityScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
+            <Stack.Screen name="MyReports" component={MyReportsScreen} />
+          </>
+        ) : (
+          // Ruta no autenticada
+          <Stack.Screen name="Login" component={LoginScreen} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AuthProvider>
+        <RootNavigator />
       </AuthProvider>
     </SafeAreaProvider>
   );

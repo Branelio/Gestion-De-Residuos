@@ -8,13 +8,25 @@ import {
   TextInput,
   Image,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import MapView, { Marker } from 'react-native-maps';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
 import { wasteReportService, ReportType } from '../services/wasteReportService';
+import { useAuth } from '../contexts/AuthContext';
+import SuccessModal from '../components/SuccessModal';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_GAP = 10;
+const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 2 - CARD_GAP * 2) / 3;
 
 interface ReportScreenProps {
   navigation: any;
@@ -32,41 +44,42 @@ interface ReportForm {
   severity: number;
 }
 
-const reportTypes: Array<{ type: string; label: string; icon: string; description: string }> = [
+const reportTypes: Array<{ type: string; label: string; icon: keyof typeof Ionicons.glyphMap; description: string }> = [
   {
     type: ReportType.OVERFLOW,
     label: 'Contenedor Lleno',
-    icon: '🗑️',
+    icon: 'trash',
     description: 'El contenedor está desbordando'
   },
   {
     type: ReportType.ILLEGAL_DUMP,
     label: 'Basurero Ilegal',
-    icon: '🚫',
+    icon: 'ban',
     description: 'Basura acumulada en lugar inadecuado'
   },
   {
     type: ReportType.DAMAGED_CONTAINER,
     label: 'Punto Crítico',
-    icon: '🔧',
+    icon: 'build',
     description: 'Zona con problemas graves de basura'
   },
   {
     type: ReportType.MISSED_COLLECTION,
     label: 'Recolección Perdida',
-    icon: '📅',
+    icon: 'calendar',
     description: 'No pasó el camión recolector'
   },
   {
     type: ReportType.DANGEROUS,
     label: 'Residuo Peligroso',
-    icon: '⚠️',
+    icon: 'warning',
     description: 'Residuos peligrosos o tóxicos'
   }
 ];
 
 export default function ReportScreen({ navigation }: ReportScreenProps) {
-  const userId = 1; // TODO: Obtener del contexto de autenticación
+  const { user } = useAuth();
+  const userId = user?.id || '1';
 
   const [form, setForm] = useState<ReportForm>({
     type: null,
@@ -78,6 +91,10 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
   });
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<'success' | 'error'>('success');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
 
   // Solicitar permisos de cámara
   const requestCameraPermission = async () => {
@@ -155,7 +172,6 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
   const getCurrentLocation = async () => {
     setIsLoadingLocation(true);
     try {
-      // 1. Verificar si los servicios de ubicación están habilitados
       const enabled = await Location.hasServicesEnabledAsync();
       if (!enabled) {
         Alert.alert(
@@ -165,7 +181,6 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
             { text: 'Cancelar', style: 'cancel' },
             {
               text: 'Abrir Configuración', onPress: () => {
-                // En dispositivos reales, esto debería abrir la configuración
                 Alert.alert('Instrucciones',
                   '1. Ve a Configuración del dispositivo\n' +
                   '2. Busca "Ubicación" o "Location"\n' +
@@ -180,27 +195,20 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
         return;
       }
 
-      // 2. Solicitar permisos
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
           'Permiso Denegado',
-          'La app necesita acceso a tu ubicación para reportar problemas de residuos. Por favor habilita el permiso en la configuración de tu dispositivo.',
-          [
-            { text: 'OK' }
-          ]
+          'La app necesita acceso a tu ubicación para reportar problemas de residuos.',
+          [{ text: 'OK' }]
         );
         setIsLoadingLocation(false);
         return;
       }
 
-      // 3. Obtener ubicación con configuración optimizada
-      console.log('📍 Obteniendo ubicación...');
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-
-      console.log('✅ Ubicación obtenida:', location.coords);
 
       setForm({
         ...form,
@@ -209,11 +217,6 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
           longitude: location.coords.longitude
         }
       });
-
-      Alert.alert(
-        '✅ Ubicación Capturada',
-        `Lat: ${location.coords.latitude.toFixed(6)}\nLon: ${location.coords.longitude.toFixed(6)}`
-      );
     } catch (error: any) {
       console.error('Error al obtener ubicación:', error);
 
@@ -231,11 +234,11 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
 
       Alert.alert(
         'Error de Ubicación',
-        errorMessage + '\n\nConsejos:\n• Activa el GPS en configuración\n• Sal al exterior para mejor señal\n• Reinicia el dispositivo',
+        errorMessage,
         [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Reintentar', onPress: getCurrentLocation },
-          { text: 'Usar Ubicación de Prueba (Solo Desarrollo)', onPress: useMockLocation }
+          { text: 'Ubicación de Prueba', onPress: useMockLocation }
         ]
       );
     } finally {
@@ -246,7 +249,7 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
   // Usar ubicación de prueba (para desarrollo/testing)
   const useMockLocation = () => {
     const mockLocation = {
-      latitude: -0.9346, // Centro de Latacunga
+      latitude: -0.9346,
       longitude: -78.6157,
     };
 
@@ -254,11 +257,44 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
       ...form,
       location: mockLocation
     });
+  };
 
-    Alert.alert(
-      '⚠️ Ubicación de Prueba',
-      `Usando ubicación del centro de Latacunga\nLat: ${mockLocation.latitude}\nLon: ${mockLocation.longitude}\n\nEsto es solo para pruebas.`
-    );
+  // Mapa Modal State
+  const [mapModalVisible, setMapModalVisible] = useState(false);
+  const [tempLocation, setTempLocation] = useState<{ latitude: number, longitude: number } | null>(null);
+
+  const openMapSelector = async () => {
+    if (!form.location) {
+      // Intentar obtener ubicación actual primero
+      setIsLoadingLocation(true);
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const loc = await Location.getCurrentPositionAsync({});
+          setTempLocation({
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude
+          });
+        } else {
+          // Default Latacunga
+          setTempLocation({ latitude: -0.9346, longitude: -78.6157 });
+        }
+      } catch (e) {
+        setTempLocation({ latitude: -0.9346, longitude: -78.6157 });
+      } finally {
+        setIsLoadingLocation(false);
+      }
+    } else {
+      setTempLocation(form.location);
+    }
+    setMapModalVisible(true);
+  };
+
+  const saveLocationFromMap = () => {
+    if (tempLocation) {
+      setForm({ ...form, location: tempLocation });
+    }
+    setMapModalVisible(false);
   };
 
   // Validar formulario
@@ -288,13 +324,6 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
 
     setIsSubmitting(true);
     try {
-      console.log('📤 ========== ENVIANDO REPORTE A API EPAGAL ==========');
-      console.log('📍 Ubicación capturada:', {
-        latitude: form.location!.latitude,
-        longitude: form.location!.longitude
-      });
-
-      // Crear reporte usando la API de EPAGAL
       const reportData = {
         userId: String(userId),
         type: form.type!,
@@ -307,213 +336,330 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
         address: form.address || '',
       };
 
-      console.log('📦 Datos del reporte:', JSON.stringify(reportData, null, 2));
-
       const result = await wasteReportService.createReport(reportData);
 
-      console.log('✅ ========== REPORTE CREADO EXITOSAMENTE ==========');
-      console.log('🆔 ID de incidencia:', result.id);
-      console.log('📍 Ubicación guardada:', {
-        lat: result.coordinates.latitude,
-        lon: result.coordinates.longitude
-      });
-      console.log('📊 Datos completos:', result);
-
-      Alert.alert(
-        '🎉 Reporte Enviado',
-        `¡Gracias por contribuir!\n\n` +
-        `Incidencia #${result.id} registrada exitosamente\n` +
-        `Ubicación: ${result.coordinates.latitude.toFixed(6)}, ${result.coordinates.longitude.toFixed(6)}\n` +
-        `Estado: ${result.status}`,
-        [
-          {
-            text: 'Ver Mis Puntos',
-            onPress: () => navigation.navigate('Profile')
-          },
-          {
-            text: 'Hacer Otro Reporte',
-            onPress: () => {
-              setForm({
-                type: null,
-                description: '',
-                photoUri: null,
-                location: form.location, // Mantener la ubicación para el siguiente reporte
-                address: form.address,
-                severity: 3
-              });
-            }
-          }
-        ]
+      setModalType('success');
+      setModalTitle('¡Reporte Enviado!');
+      setModalMessage(
+        `Incidencia #${result.id} registrada exitosamente.\n\n` +
+        `Tu reporte ayuda a mantener Latacunga más limpia. ¡Gracias por contribuir!`
       );
+      setModalVisible(true);
     } catch (error: any) {
-      console.error('❌ ========== ERROR AL ENVIAR REPORTE ==========');
-      console.error('Mensaje:', error.message);
-      console.error('Detalles:', error);
-      Alert.alert(
-        '❌ Error al Enviar',
+      console.error('Error al enviar reporte:', error);
+      setModalType('error');
+      setModalTitle('Error al Enviar');
+      setModalMessage(
         error.message || 'No se pudo enviar el reporte. Verifica tu conexión a internet e intenta nuevamente.'
       );
+      setModalVisible(true);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const resetForm = () => {
+    setForm({
+      type: null,
+      description: '',
+      photoUri: null,
+      location: form.location,
+      address: form.address,
+      severity: 3
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← Atrás</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Reportar Problema</Text>
-          <Text style={styles.subtitle}>Ayúdanos a mantener Latacunga limpia</Text>
-        </View>
-
-        {/* Tipo de Reporte */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>1. Tipo de Problema *</Text>
-          <View style={styles.reportTypesGrid}>
-            {reportTypes.map((item) => (
-              <TouchableOpacity
-                key={item.type}
-                style={[
-                  styles.reportTypeCard,
-                  form.type === item.type && styles.reportTypeCardActive
-                ]}
-                onPress={() => setForm({ ...form, type: item.type })}
-              >
-                <Text style={styles.reportTypeIcon}>{item.icon}</Text>
-                <Text style={styles.reportTypeLabel}>{item.label}</Text>
-              </TouchableOpacity>
-            ))}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={22} color={colors.primary[600]} />
+              <Text style={styles.backButtonText}>Atrás</Text>
+            </TouchableOpacity>
+            <Text style={styles.title}>Reportar Problema</Text>
+            <Text style={styles.subtitle}>Ayúdanos a mantener Latacunga limpia</Text>
           </View>
-        </View>
 
-        {/* Descripción */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>2. Descripción del Problema *</Text>
-          <TextInput
-            style={styles.textArea}
-            placeholder="Describe detalladamente el problema..."
-            placeholderTextColor={colors.neutral[400]}
-            multiline
-            numberOfLines={4}
-            value={form.description}
-            onChangeText={(text) => setForm({ ...form, description: text })}
-            maxLength={500}
-          />
-          <Text style={styles.charCount}>{form.description.length}/500</Text>
-        </View>
-
-        {/* Foto */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>3. Fotografía *</Text>
-          {form.photoUri ? (
-            <View style={styles.photoPreview}>
-              <Image source={{ uri: form.photoUri }} style={styles.photoImage} />
-              <TouchableOpacity
-                style={styles.removePhotoButton}
-                onPress={() => setForm({ ...form, photoUri: null })}
-              >
-                <Text style={styles.removePhotoText}>✕ Quitar</Text>
-              </TouchableOpacity>
+          {/* Tipo de Reporte */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>1. Tipo de Problema *</Text>
+            <View style={styles.reportTypesGrid}>
+              {reportTypes.map((item) => (
+                <TouchableOpacity
+                  key={item.type}
+                  style={[
+                    styles.reportTypeCard,
+                    form.type === item.type && styles.reportTypeCardActive
+                  ]}
+                  onPress={() => setForm({ ...form, type: item.type })}
+                >
+                  <View style={[
+                    styles.reportTypeIconContainer,
+                    form.type === item.type && styles.reportTypeIconContainerActive
+                  ]}>
+                    <Ionicons
+                      name={item.icon}
+                      size={26}
+                      color={form.type === item.type ? colors.primary[600] : colors.neutral[500]}
+                    />
+                  </View>
+                  <Text style={[
+                    styles.reportTypeLabel,
+                    form.type === item.type && styles.reportTypeLabelActive
+                  ]}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          ) : (
-            <View style={styles.photoButtons}>
-              <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
-                <Text style={styles.photoButtonIcon}>📷</Text>
-                <Text style={styles.photoButtonText}>Tomar Foto</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-                <Text style={styles.photoButtonIcon}>🖼️</Text>
-                <Text style={styles.photoButtonText}>Desde Galería</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
+          </View>
 
-        {/* Ubicación */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>4. Ubicación *</Text>
-          <Text style={styles.sectionSubtitle}>
-            Captura tu ubicación actual para registrar el lugar exacto del problema
-          </Text>
-          {form.location ? (
-            <View style={styles.locationCard}>
-              <Text style={styles.locationIcon}>📍</Text>
-              <View style={styles.locationInfo}>
-                <Text style={styles.locationLabel}>✅ Ubicación Guardada</Text>
-                <Text style={styles.locationCoords}>
-                  Latitud: {form.location.latitude.toFixed(6)}
-                </Text>
-                <Text style={styles.locationCoords}>
-                  Longitud: {form.location.longitude.toFixed(6)}
-                </Text>
-                <Text style={styles.locationNote}>
-                  Esta ubicación será enviada a la API de EPAGAL
+          {/* Descripción */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>2. Descripción del Problema *</Text>
+            <TextInput
+              style={styles.textArea}
+              placeholder="Describe detalladamente el problema..."
+              placeholderTextColor={colors.neutral[400]}
+              multiline
+              numberOfLines={4}
+              value={form.description}
+              onChangeText={(text) => setForm({ ...form, description: text })}
+              maxLength={500}
+            />
+            <Text style={styles.charCount}>{form.description.length}/500</Text>
+          </View>
+
+          {/* Foto */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>3. Fotografía *</Text>
+            {form.photoUri ? (
+              <View style={styles.photoPreview}>
+                <Image source={{ uri: form.photoUri }} style={styles.photoImage} />
+                <TouchableOpacity
+                  style={styles.removePhotoButton}
+                  onPress={() => setForm({ ...form, photoUri: null })}
+                >
+                  <Ionicons name="close" size={16} color="#fff" />
+                  <Text style={styles.removePhotoText}>Quitar</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.photoButtons}>
+                <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
+                  <Ionicons name="camera" size={36} color={colors.primary[600]} />
+                  <Text style={styles.photoButtonText}>Tomar Foto</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
+                  <Ionicons name="images" size={36} color={colors.primary[600]} />
+                  <Text style={styles.photoButtonText}>Desde Galería</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* Ubicación */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>4. Ubicación *</Text>
+            <Text style={styles.sectionSubtitle}>
+              Toca el mapa para ajustar la ubicación exacta del problema.
+            </Text>
+
+            <View style={styles.locationContainer}>
+              {form.location ? (
+                <View style={{ borderRadius: 14, overflow: 'hidden', height: 200, borderWidth: 1, borderColor: colors.neutral[200] }}>
+                  <MapView
+                    style={{ flex: 1 }}
+                    region={{
+                      latitude: form.location.latitude,
+                      longitude: form.location.longitude,
+                      latitudeDelta: 0.002,
+                      longitudeDelta: 0.002,
+                    }}
+                    scrollEnabled={false}
+                    zoomEnabled={false}
+                    onPress={openMapSelector}
+                  >
+                    <Marker coordinate={form.location} />
+                  </MapView>
+                  <TouchableOpacity
+                    style={styles.editLocationButton}
+                    onPress={openMapSelector}
+                  >
+                    <Ionicons name="map" size={16} color="#fff" />
+                    <Text style={{ color: '#fff', fontWeight: '600', marginLeft: 6 }}>Editar Ubicación</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.locationButton}
+                  onPress={openMapSelector}
+                  disabled={isLoadingLocation}
+                >
+                  {isLoadingLocation ? (
+                    <>
+                      <ActivityIndicator color={colors.primary[600]} />
+                      <Text style={styles.locationButtonText}>Obteniendo GPS...</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="map-outline" size={32} color={colors.primary[600]} />
+                      <Text style={styles.locationButtonText}>Seleccionar en Mapa</Text>
+                      <Text style={styles.locationButtonSubtext}>Usa el mapa para marcar el lugar</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {form.location && (
+              <View style={styles.coordsRow}>
+                <Ionicons name="location-outline" size={16} color={colors.neutral[500]} />
+                <Text style={styles.coordsText}>
+                  {form.location.latitude.toFixed(5)}, {form.location.longitude.toFixed(5)}
                 </Text>
               </View>
-              <TouchableOpacity
-                onPress={getCurrentLocation}
-                style={styles.updateLocationButton}
-              >
-                <Text style={styles.updateLocationText}>🔄 Actualizar</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
+            )}
+          </View>
+
+          {/* Botón Enviar */}
+          <View style={styles.submitSection}>
             <TouchableOpacity
-              style={styles.locationButton}
-              onPress={getCurrentLocation}
-              disabled={isLoadingLocation}
+              style={[
+                styles.submitButton,
+                isSubmitting && styles.submitButtonDisabled
+              ]}
+              onPress={submitReport}
+              disabled={isSubmitting}
             >
-              {isLoadingLocation ? (
+              {isSubmitting ? (
                 <>
-                  <ActivityIndicator color={colors.primary[600]} />
-                  <Text style={styles.locationButtonText}>Obteniendo ubicación...</Text>
+                  <ActivityIndicator color="#fff" style={styles.submitLoader} />
+                  <Text style={styles.submitButtonText}>Enviando...</Text>
                 </>
               ) : (
                 <>
-                  <Text style={styles.locationButtonIcon}>📍</Text>
-                  <Text style={styles.locationButtonText}>Capturar Mi Ubicación</Text>
-                  <Text style={styles.locationButtonSubtext}>
-                    Usaremos GPS para obtener tu posición exacta
-                  </Text>
+                  <Ionicons name="send" size={20} color="#fff" style={{ marginRight: 8 }} />
+                  <Text style={styles.submitButtonText}>Enviar Reporte</Text>
                 </>
               )}
             </TouchableOpacity>
-          )}
-        </View>
+            <View style={styles.rewardRow}>
+              <Ionicons name="gift" size={16} color={colors.primary[600]} />
+              <Text style={styles.rewardText}>Ganarás puntos por este reporte</Text>
+            </View>
+          </View>
 
-        {/* Botón Enviar */}
-        <View style={styles.submitSection}>
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              isSubmitting && styles.submitButtonDisabled
-            ]}
-            onPress={submitReport}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <ActivityIndicator color="#fff" style={styles.submitLoader} />
-                <Text style={styles.submitButtonText}>Enviando...</Text>
-              </>
-            ) : (
-              <Text style={styles.submitButtonText}>📤 Enviar Reporte</Text>
+          {/* Info Footer */}
+          <View style={styles.infoFooter}>
+            <View style={styles.infoRow}>
+              <Ionicons name="information-circle" size={18} color={colors.neutral[500]} />
+              <Text style={styles.infoText}>
+                Tus reportes ayudan a EPAGAL a brindar un mejor servicio a la comunidad.
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Success/Error Modal */}
+      <SuccessModal
+        visible={modalVisible}
+        type={modalType}
+        title={modalTitle}
+        message={modalMessage}
+        buttons={
+          modalType === 'success'
+            ? [
+              {
+                text: 'Ver Mis Puntos',
+                onPress: () => {
+                  setModalVisible(false);
+                  navigation.navigate('Profile');
+                },
+                style: 'primary',
+                icon: 'trophy',
+              },
+              {
+                text: 'Hacer Otro Reporte',
+                onPress: () => {
+                  setModalVisible(false);
+                  resetForm();
+                },
+                style: 'secondary',
+                icon: 'add-circle',
+              },
+            ]
+            : [
+              {
+                text: 'Reintentar',
+                onPress: () => {
+                  setModalVisible(false);
+                  submitReport();
+                },
+                style: 'primary',
+                icon: 'refresh',
+              },
+              {
+                text: 'Cerrar',
+                onPress: () => setModalVisible(false),
+                style: 'secondary',
+              },
+            ]
+        }
+        onClose={() => setModalVisible(false)}
+      />
+
+      {/* Modal de Selección de Ubicación en Mapa */}
+      <Modal
+        visible={mapModalVisible}
+        animationType="slide"
+        onRequestClose={() => setMapModalVisible(false)}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => setMapModalVisible(false)} style={styles.backButton}>
+              <Ionicons name="close" size={24} color={colors.text.primary} />
+              <Text style={[styles.backButtonText, { color: colors.text.primary }]}>Cancelar</Text>
+            </TouchableOpacity>
+            <Text style={[styles.title, { fontSize: 20, marginBottom: 0 }]}>Seleccionar Ubicación</Text>
+            <View style={{ width: 60 }} />
+          </View>
+
+          <View style={{ flex: 1 }}>
+            {tempLocation && (
+              <MapView
+                style={{ flex: 1 }}
+                initialRegion={{
+                  latitude: tempLocation.latitude,
+                  longitude: tempLocation.longitude,
+                  latitudeDelta: 0.005,
+                  longitudeDelta: 0.005,
+                }}
+                onPress={(e) => setTempLocation(e.nativeEvent.coordinate)}
+              >
+                <Marker coordinate={tempLocation} draggable />
+              </MapView>
             )}
-          </TouchableOpacity>
-          <Text style={styles.rewardText}>🎁 Ganarás puntos por este reporte</Text>
-        </View>
+            <View style={{ position: 'absolute', bottom: 20, left: 20, right: 20 }}>
+              <Text style={{ textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.8)', padding: 10, borderRadius: 10, marginBottom: 10 }}>
+                Toca el mapa para mover el marcador
+              </Text>
+              <TouchableOpacity
+                style={[styles.submitButton, { backgroundColor: colors.primary[600] }]}
+                onPress={saveLocationFromMap}
+              >
+                <Text style={styles.submitButtonText}>Confirmar Ubicación</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
 
-        {/* Info Footer */}
-        <View style={styles.infoFooter}>
-          <Text style={styles.infoText}>
-            ℹ️ Tus reportes ayudan a EPAGAL a brindar un mejor servicio a la comunidad.
-          </Text>
-        </View>
-      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -531,7 +677,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff'
   },
   backButton: {
-    marginBottom: spacing.sm
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+    gap: 4,
   },
   backButtonText: {
     fontSize: 16,
@@ -565,33 +714,47 @@ const styles = StyleSheet.create({
   reportTypesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm
+    justifyContent: 'space-between',
+    gap: CARD_GAP,
   },
   reportTypeCard: {
-    width: '30%',
-    aspectRatio: 1,
+    width: CARD_WIDTH,
+    minWidth: 95,
     backgroundColor: colors.neutral[50],
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 1.5,
     borderColor: colors.neutral[200],
-    padding: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xs,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   reportTypeCardActive: {
     borderColor: colors.primary[500],
     borderWidth: 2,
     backgroundColor: colors.primary[50],
   },
-  reportTypeIcon: {
-    fontSize: 32,
-    marginBottom: spacing.xs
+  reportTypeIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.neutral[100],
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  reportTypeIconContainerActive: {
+    backgroundColor: colors.primary[100],
   },
   reportTypeLabel: {
-    fontSize: 12,
+    fontSize: 11,
     textAlign: 'center',
     color: colors.neutral[700],
     fontWeight: '500'
+  },
+  reportTypeLabelActive: {
+    color: colors.primary[700],
+    fontWeight: '600',
   },
   textArea: {
     backgroundColor: colors.neutral[50],
@@ -617,16 +780,13 @@ const styles = StyleSheet.create({
   photoButton: {
     flex: 1,
     backgroundColor: colors.neutral[50],
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 2,
-    borderColor: colors.primary[600],
+    borderColor: colors.primary[200],
     borderStyle: 'dashed',
     padding: spacing.lg,
-    alignItems: 'center'
-  },
-  photoButtonIcon: {
-    fontSize: 40,
-    marginBottom: spacing.sm
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   photoButtonText: {
     fontSize: 14,
@@ -647,9 +807,12 @@ const styles = StyleSheet.create({
     top: spacing.sm,
     right: spacing.sm,
     backgroundColor: 'rgba(0,0,0,0.7)',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: 20
+    borderRadius: 20,
+    gap: 4,
   },
   removePhotoText: {
     color: '#fff',
@@ -658,18 +821,14 @@ const styles = StyleSheet.create({
   },
   locationButton: {
     backgroundColor: colors.neutral[50],
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 2,
-    borderColor: colors.primary[600],
+    borderColor: colors.primary[200],
     borderStyle: 'dashed',
     padding: spacing.lg,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm
-  },
-  locationButtonIcon: {
-    fontSize: 24
+    gap: spacing.sm,
   },
   locationButtonText: {
     fontSize: 16,
@@ -680,21 +839,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.primary[50],
-    borderRadius: 12,
+    borderRadius: 14,
     padding: spacing.md,
-    gap: spacing.md
+    gap: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.primary[200],
   },
-  locationIcon: {
-    fontSize: 32
+  locationIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primary[100],
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   locationInfo: {
     flex: 1
+  },
+  locationLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 2,
   },
   locationLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.neutral[900],
-    marginBottom: 2
   },
   locationCoords: {
     fontSize: 12,
@@ -706,22 +877,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     lineHeight: 20
   },
-  locationNote: {
-    fontSize: 12,
-    color: colors.neutral[500],
-    marginTop: 4,
-    fontStyle: 'italic'
-  },
   updateLocationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.primary[100],
-    borderRadius: 8,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  updateLocationText: {
-    color: colors.primary[600],
-    fontWeight: '600',
-    fontSize: 14
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   locationButtonSubtext: {
     fontSize: 12,
@@ -732,9 +894,38 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingTop: spacing.xl
   },
+  locationContainer: {
+    marginTop: spacing.xs,
+  },
+  editLocationButton: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    backgroundColor: colors.primary[600],
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  coordsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.md,
+    gap: 4,
+  },
+  coordsText: {
+    fontSize: 12,
+    color: colors.neutral[500],
+  },
   submitButton: {
     backgroundColor: colors.primary[600],
-    borderRadius: 12,
+    borderRadius: 14,
     padding: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
@@ -752,9 +943,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold'
   },
-  rewardText: {
-    textAlign: 'center',
+  rewardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: spacing.md,
+    gap: 6,
+  },
+  rewardText: {
     fontSize: 14,
     color: colors.primary[600],
     fontWeight: '500'
@@ -763,10 +959,15 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingTop: 0
   },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
   infoText: {
+    flex: 1,
     fontSize: 13,
     color: colors.neutral[600],
-    textAlign: 'center',
     lineHeight: 20
   }
 });

@@ -38,6 +38,8 @@ export interface WasteReport {
     longitude: number;
   };
   address: string;
+  zone?: string;
+  severity?: number;
   photoUrl?: string;
   status: string;
   verifiedByAI: boolean;
@@ -102,19 +104,67 @@ function determinarZona(lat: number, lon: number): string {
 
 class WasteReportService {
   /**
+   * Subir imagen al servidor
+   */
+  async uploadImage(uri: string): Promise<string> {
+    try {
+      console.log('📤 Subiendo imagen:', uri);
+
+      const formData = new FormData();
+      const filename = uri.split('/').pop() || 'photo.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+      formData.append('image', {
+        uri,
+        name: filename,
+        type,
+      } as any);
+
+      const response = await httpClient.post<{ success: boolean; data: { url: string } }>(
+        '/api/upload/image',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      console.log('✅ Imagen subida, URL:', response.data.url);
+      return response.data.url;
+    } catch (error: any) {
+      console.error('❌ Error subiendo imagen:', error);
+      throw new Error('Error al subir la imagen. Intenta nuevamente.');
+    }
+  }
+
+  /**
    * Crear un nuevo reporte de residuos
    */
   async createReport(data: CreateReportData): Promise<WasteReport> {
     try {
-      console.log('📤 Creando reporte en backend local:', data);
+      console.log('📤 Procesando reporte...', data);
 
-      // Determinar dirección si no se proporciona
+      // 1. Subir imagen si existe y es local
+      let photoUrl = data.photoUrl;
+      if (photoUrl && (photoUrl.startsWith('file://') || photoUrl.startsWith('content://'))) {
+        try {
+          photoUrl = await this.uploadImage(photoUrl);
+        } catch (uploadError) {
+          console.warn('⚠️ Falló subida de imagen, se usará URL local:', uploadError);
+          // Opcional: lanzar error si la imagen es obligatoria
+        }
+      }
+
+      // 2. Determinar dirección si no se proporciona
       const address = data.address || determinarZona(
         data.coordinates.latitude,
         data.coordinates.longitude
       );
 
-      const response = await httpClient.post<{ success: boolean; data: WasteReport }>(
+      // 3. Crear reporte en backend
+      const result = await httpClient.post<WasteReport>(
         '/api/waste-reports',
         {
           userId: data.userId,
@@ -122,14 +172,13 @@ class WasteReportService {
           description: data.description,
           coordinates: data.coordinates,
           address: address,
-          photoUrl: data.photoUrl,
+          photoUrl: photoUrl, // Usar la URL subida (o la original si falló)
         }
       );
 
-      console.log('✅ Reporte creado:', response);
+      console.log('✅ Reporte creado:', result);
 
-      // El interceptor de httpClient ya extrae response.data.data
-      return response as unknown as WasteReport;
+      return result;
     } catch (error: any) {
       console.error('❌ Error creando reporte:', error);
       throw new Error(
@@ -145,10 +194,10 @@ class WasteReportService {
    */
   async getAllReports(): Promise<WasteReport[]> {
     try {
-      const response = await httpClient.get<{ success: boolean; data: WasteReport[]; count: number }>(
+      const result = await httpClient.get<WasteReport[]>(
         '/api/waste-reports'
       );
-      return response as unknown as WasteReport[];
+      return result;
     } catch (error: any) {
       console.error('❌ Error obteniendo reportes:', error);
       throw new Error(
@@ -163,10 +212,10 @@ class WasteReportService {
    */
   async getUserReports(userId: string): Promise<WasteReport[]> {
     try {
-      const response = await httpClient.get<{ success: boolean; data: WasteReport[]; count: number }>(
+      const result = await httpClient.get<WasteReport[]>(
         `/api/waste-reports/user/${userId}`
       );
-      return response as unknown as WasteReport[];
+      return result;
     } catch (error: any) {
       console.error('❌ Error obteniendo reportes del usuario:', error);
       throw new Error(
@@ -181,10 +230,10 @@ class WasteReportService {
    */
   async getReportById(id: string): Promise<WasteReport> {
     try {
-      const response = await httpClient.get<{ success: boolean; data: WasteReport }>(
+      const result = await httpClient.get<WasteReport>(
         `/api/waste-reports/${id}`
       );
-      return response as unknown as WasteReport;
+      return result;
     } catch (error: any) {
       console.error('❌ Error obteniendo reporte:', error);
       throw new Error(
@@ -199,10 +248,10 @@ class WasteReportService {
    */
   async getStats(): Promise<ReportStats> {
     try {
-      const response = await httpClient.get<{ success: boolean; data: ReportStats }>(
+      const result = await httpClient.get<ReportStats>(
         '/api/waste-reports/stats'
       );
-      return response as unknown as ReportStats;
+      return result;
     } catch (error: any) {
       console.error('❌ Error obteniendo estadísticas:', error);
       throw new Error(
@@ -221,10 +270,10 @@ class WasteReportService {
     radiusKm: number = 10
   ): Promise<WasteReport[]> {
     try {
-      const response = await httpClient.get<{ success: boolean; data: WasteReport[]; count: number }>(
+      const result = await httpClient.get<WasteReport[]>(
         `/api/waste-reports/nearby?lat=${latitude}&lng=${longitude}&radius=${radiusKm}`
       );
-      return response as unknown as WasteReport[];
+      return result;
     } catch (error: any) {
       console.error('❌ Error obteniendo reportes cercanos:', error);
       throw new Error(

@@ -253,7 +253,33 @@ export default function ReportsPage() {
                             {selectedReport.photoUrl && (
                                 <div className="detail-item full-width">
                                     <label>Foto:</label>
-                                    <img src={selectedReport.photoUrl} alt="Reporte" className="report-image" />
+                                    <img
+                                        src={selectedReport.photoUrl}
+                                        alt="Reporte"
+                                        className="report-image"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            // Fallback: Si falla la carga, intentar reemplazar el host por localhost si estamos en dev
+                                            // O mostrar una imagen placeholder
+                                            if (!target.src.includes('placeholder')) {
+                                                // Si la URL es de una IP local que no es alcanzable, intentar localhost (caso común dev)
+                                                /*
+                                                const url = new URL(target.src);
+                                                if (url.hostname !== 'localhost') {
+                                                    url.hostname = 'localhost';
+                                                    target.src = url.toString();
+                                                } else {
+                                                    target.style.display = 'none'; // ocultar si falla todo
+                                                }
+                                                */
+                                                target.onerror = null; // prevenir loop
+                                                target.src = 'https://via.placeholder.com/400x300?text=Error+Cargando+Imagen';
+                                            }
+                                        }}
+                                    />
+                                    <p className="debug-url" style={{ fontSize: '0.8em', color: '#999', marginTop: '5px' }}>
+                                        URL: {selectedReport.photoUrl}
+                                    </p>
                                 </div>
                             )}
                         </div>

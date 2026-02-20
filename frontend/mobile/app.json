@@ -27,11 +27,15 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -59,6 +63,12 @@
           "photosPermission": "Esta aplicación necesita acceso a tu galería para seleccionar fotos."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "apiUrl": "http://10.52.20.171:3000",
+      "eas": {
+        "projectId": "a9993872-1391-4162-9c60-e21543946cf4"
+      }
+    }
   }
 }

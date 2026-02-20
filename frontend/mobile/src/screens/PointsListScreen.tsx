@@ -9,6 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
 import { collectionPointService, CollectionPoint } from '../services/collectionPointService';
@@ -90,7 +91,7 @@ export default function PointsListScreen({ navigation }: any) {
 
   const renderPoint = ({ item, index }: { item: CollectionPoint; index: number }) => {
     const pointId = typeof item.id === 'string' ? item.id : item.id.value;
-    
+
     return (
       <TouchableOpacity
         style={styles.pointCard}
@@ -120,14 +121,20 @@ export default function PointsListScreen({ navigation }: any) {
           </View>
         </View>
 
-        <Text style={styles.pointAddress} numberOfLines={2}>
-          📍 {item.address}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 40, marginBottom: spacing.md }}>
+          <Ionicons name="location" size={14} color={colors.text.secondary} />
+          <Text style={[styles.pointAddress, { marginLeft: 0, marginBottom: 0 }]} numberOfLines={2}>
+            {item.address}
+          </Text>
+        </View>
 
         <View style={styles.distanceContainer}>
-          <Text style={styles.distanceText}>
-            📏 {location ? 'Calculando distancia...' : 'Ver en mapa'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Ionicons name="resize" size={14} color={colors.primary[600]} />
+            <Text style={styles.distanceText}>
+              {location ? 'Calculando distancia...' : 'Ver en mapa'}
+            </Text>
+          </View>
           <Text style={styles.arrowText}>→</Text>
         </View>
       </TouchableOpacity>
@@ -151,7 +158,10 @@ export default function PointsListScreen({ navigation }: any) {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.backText}>← Volver</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="arrow-back" size={16} color={colors.primary[600]} />
+              <Text style={styles.backText}>Volver</Text>
+            </View>
           </TouchableOpacity>
           <Text style={styles.title}>Puntos de Acopio</Text>
           <Text style={styles.subtitle}>

@@ -9,6 +9,7 @@ import {
     RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
 import { collectionPointService, CollectionPoint } from '../services/collectionPointService';
@@ -122,9 +123,9 @@ export default function MyRoutesScreen({ navigation }: MyRoutesScreenProps) {
 
     const getStatusText = (status: string) => {
         switch (status) {
-            case 'active': return '🟢 En Curso';
-            case 'completed': return '✅ Completada';
-            case 'upcoming': return '🔜 Próxima';
+            case 'active': return 'En Curso';
+            case 'completed': return 'Completada';
+            case 'upcoming': return 'Próxima';
             default: return status;
         }
     };
@@ -150,9 +151,15 @@ export default function MyRoutesScreen({ navigation }: MyRoutesScreenProps) {
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Text style={styles.backButtonText}>← Atrás</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Ionicons name="arrow-back" size={18} color={colors.primary[600]} />
+                            <Text style={styles.backButtonText}>Atrás</Text>
+                        </View>
                     </TouchableOpacity>
-                    <Text style={styles.title}>🚛 Rutas de Recolección</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Ionicons name="bus" size={24} color={colors.neutral[900]} />
+                        <Text style={styles.title}>Rutas de Recolección</Text>
+                    </View>
                     <Text style={styles.subtitle}>
                         Horarios y puntos de recolección cerca de ti
                     </Text>
@@ -160,7 +167,7 @@ export default function MyRoutesScreen({ navigation }: MyRoutesScreenProps) {
 
                 {/* User Zone Card */}
                 <View style={styles.zoneCard}>
-                    <Text style={styles.zoneIcon}>📍</Text>
+                    <Ionicons name="location" size={32} color={colors.primary[600]} />
                     <View style={styles.zoneInfo}>
                         <Text style={styles.zoneLabel}>Tu ubicación</Text>
                         <Text style={styles.zoneName}>{userZone}</Text>
@@ -172,7 +179,10 @@ export default function MyRoutesScreen({ navigation }: MyRoutesScreenProps) {
 
                 {/* Schedules Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>📅 Horarios de Recolección</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name="calendar" size={18} color={colors.neutral[900]} />
+                        <Text style={styles.sectionTitle}>Horarios de Recolección</Text>
+                    </View>
                     <Text style={styles.sectionSubtitle}>Por zona de Latacunga</Text>
 
                     <View style={styles.schedulesList}>
@@ -191,12 +201,21 @@ export default function MyRoutesScreen({ navigation }: MyRoutesScreenProps) {
                                     </View>
                                 </View>
                                 <View style={styles.scheduleDetails}>
-                                    <Text style={styles.scheduleDetail}>📆 {schedule.days}</Text>
-                                    <Text style={styles.scheduleDetail}>🕐 {schedule.time}</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                        <Ionicons name="calendar-outline" size={14} color={colors.neutral[600]} />
+                                        <Text style={styles.scheduleDetail}>{schedule.days}</Text>
+                                    </View>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                        <Ionicons name="time-outline" size={14} color={colors.neutral[600]} />
+                                        <Text style={styles.scheduleDetail}>{schedule.time}</Text>
+                                    </View>
                                 </View>
                                 {schedule.zone === userZone && (
                                     <View style={styles.yourZoneBadge}>
-                                        <Text style={styles.yourZoneText}>🏠 Tu zona</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                            <Ionicons name="home" size={12} color={colors.primary[600]} />
+                                            <Text style={styles.yourZoneText}>Tu zona</Text>
+                                        </View>
                                     </View>
                                 )}
                             </View>
@@ -206,7 +225,10 @@ export default function MyRoutesScreen({ navigation }: MyRoutesScreenProps) {
 
                 {/* Nearby Points Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>📦 Puntos de Acopio Cercanos</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name="cube" size={18} color={colors.neutral[900]} />
+                        <Text style={styles.sectionTitle}>Puntos de Acopio Cercanos</Text>
+                    </View>
                     <Text style={styles.sectionSubtitle}>Los 5 más cercanos a tu ubicación</Text>
 
                     {nearbyPoints.length > 0 ? (
@@ -224,9 +246,10 @@ export default function MyRoutesScreen({ navigation }: MyRoutesScreenProps) {
                                         <Text style={styles.pointName}>{point.name}</Text>
                                         <Text style={styles.pointAddress}>{point.address}</Text>
                                         <View style={styles.pointStats}>
-                                            <Text style={styles.pointStat}>
-                                                📊 {point.fillPercentage}% lleno
-                                            </Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                <Ionicons name="bar-chart" size={11} color={colors.neutral[500]} />
+                                                <Text style={styles.pointStat}>{point.fillPercentage}% lleno</Text>
+                                            </View>
                                         </View>
                                     </View>
                                     <Text style={styles.pointArrow}>→</Text>
@@ -235,7 +258,7 @@ export default function MyRoutesScreen({ navigation }: MyRoutesScreenProps) {
                         </View>
                     ) : (
                         <View style={styles.emptyState}>
-                            <Text style={styles.emptyIcon}>📍</Text>
+                            <Ionicons name="location" size={48} color={colors.neutral[400]} />
                             <Text style={styles.emptyText}>
                                 {locationError
                                     ? 'No se pudo obtener la ubicación'
@@ -248,7 +271,10 @@ export default function MyRoutesScreen({ navigation }: MyRoutesScreenProps) {
 
                 {/* Tips Section */}
                 <View style={styles.tipsCard}>
-                    <Text style={styles.tipsTitle}>💡 Consejos</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm }}>
+                        <Ionicons name="bulb" size={18} color={colors.neutral[900]} />
+                        <Text style={styles.tipsTitle}>Consejos</Text>
+                    </View>
                     <Text style={styles.tipItem}>• Saca la basura 30 minutos antes del horario</Text>
                     <Text style={styles.tipItem}>• Separa los residuos por tipo</Text>
                     <Text style={styles.tipItem}>• Usa bolsas resistentes para evitar derrames</Text>

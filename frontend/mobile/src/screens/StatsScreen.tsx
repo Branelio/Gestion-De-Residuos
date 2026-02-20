@@ -8,8 +8,11 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
+
+import { userService } from '../services/userService';
 
 interface StatsData {
     totalReports: number;
@@ -24,6 +27,7 @@ interface StatsData {
 
 export default function StatsScreen({ navigation }: any) {
     const { user } = useAuth();
+    const userId = user?.id || '1';
     const [stats, setStats] = useState<StatsData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -34,26 +38,36 @@ export default function StatsScreen({ navigation }: any) {
     const loadStats = async () => {
         setLoading(true);
         try {
-            // Simular carga de estadísticas del backend
-            // En producción, esto vendría del API
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Obtener estadísticas reales del backend
+            const userStats = await userService.getUserStats(userId);
 
-            // Datos calculados basados en puntos del usuario
-            const userPoints = user?.points || 0;
-            const reportsCount = user?.reportsCount || 0;
+            const reportsCount = userStats.totalReports || 0;
+            const points = userStats.totalPoints || 0;
+            const resolved = userStats.resolvedReports || 0;
 
             setStats({
                 totalReports: reportsCount,
-                resolvedReports: Math.floor(reportsCount * 0.7),
-                totalPoints: userPoints,
+                resolvedReports: resolved,
+                totalPoints: points,
                 kgReported: reportsCount * 5.2, // Estimado: 5.2 kg por reporte
                 co2Saved: reportsCount * 2.8, // Estimado: 2.8 kg CO2 por reporte
                 treesEquivalent: Math.floor(reportsCount * 0.15), // 1 árbol = ~7 reportes
-                monthlyReports: Math.min(reportsCount, 5),
-                rank: Math.max(1, 100 - userPoints), // Ranking estimado
+                monthlyReports: userStats.pendingReports, // Usando pendientes como "reportes del mes" temporalmente o 0
+                rank: Math.max(1, 100 - Math.floor(points / 10)), // Ranking estimado basado en puntos
             });
         } catch (error) {
             console.error('Error loading stats:', error);
+            // Fallback en caso de error
+            setStats({
+                totalReports: 0,
+                resolvedReports: 0,
+                totalPoints: 0,
+                kgReported: 0,
+                co2Saved: 0,
+                treesEquivalent: 0,
+                monthlyReports: 0,
+                rank: 0,
+            });
         } finally {
             setLoading(false);
         }
@@ -73,7 +87,7 @@ export default function StatsScreen({ navigation }: any) {
         suffix?: string;
     }) => (
         <View style={[styles.statCard, { borderLeftColor: color }]}>
-            <Text style={styles.statIcon}>{icon}</Text>
+            <Ionicons name={icon as any} size={28} color={color} style={{ marginRight: spacing.md }} />
             <View style={styles.statInfo}>
                 <Text style={[styles.statValue, { color }]}>
                     {value.toFixed(1)}{suffix}
@@ -100,9 +114,15 @@ export default function StatsScreen({ navigation }: any) {
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Text style={styles.backButtonText}>← Atrás</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Ionicons name="arrow-back" size={18} color={colors.primary[600]} />
+                            <Text style={styles.backButtonText}>Atrás</Text>
+                        </View>
                     </TouchableOpacity>
-                    <Text style={styles.title}>📊 Mi Impacto Ambiental</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Ionicons name="bar-chart" size={24} color={colors.neutral[900]} />
+                        <Text style={styles.title}>Mi Impacto Ambiental</Text>
+                    </View>
                     <Text style={styles.subtitle}>
                         Tu contribución a Latacunga Limpia
                     </Text>
@@ -110,7 +130,7 @@ export default function StatsScreen({ navigation }: any) {
 
                 {/* User Summary */}
                 <View style={styles.summaryCard}>
-                    <Text style={styles.summaryIcon}>🌍</Text>
+                    <Ionicons name="earth" size={48} color={colors.primary[500]} />
                     <Text style={styles.summaryTitle}>
                         ¡Gracias por cuidar el planeta!
                     </Text>
@@ -121,24 +141,27 @@ export default function StatsScreen({ navigation }: any) {
                 </View>
 
                 {/* Impact Stats */}
-                <Text style={styles.sectionTitle}>🌿 Tu Impacto Ecológico</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: spacing.lg, marginBottom: spacing.sm }}>
+                    <Ionicons name="leaf" size={18} color={colors.neutral[900]} />
+                    <Text style={styles.sectionTitle}>Tu Impacto Ecológico</Text>
+                </View>
                 <View style={styles.statsGrid}>
                     <StatCard
-                        icon="📦"
+                        icon="cube"
                         value={stats?.kgReported || 0}
                         label="Kg de residuos reportados"
                         color="#10B981"
                         suffix=" kg"
                     />
                     <StatCard
-                        icon="💨"
+                        icon="cloud"
                         value={stats?.co2Saved || 0}
                         label="Kg de CO₂ evitado"
                         color="#3B82F6"
                         suffix=" kg"
                     />
                     <StatCard
-                        icon="🌳"
+                        icon="leaf"
                         value={stats?.treesEquivalent || 0}
                         label="Árboles equivalentes salvados"
                         color="#059669"
@@ -146,22 +169,25 @@ export default function StatsScreen({ navigation }: any) {
                 </View>
 
                 {/* Activity Stats */}
-                <Text style={styles.sectionTitle}>📈 Tu Actividad</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: spacing.lg, marginBottom: spacing.sm }}>
+                    <Ionicons name="trending-up" size={18} color={colors.neutral[900]} />
+                    <Text style={styles.sectionTitle}>Tu Actividad</Text>
+                </View>
                 <View style={styles.statsGrid}>
                     <StatCard
-                        icon="📋"
+                        icon="document-text"
                         value={stats?.totalReports || 0}
                         label="Reportes totales"
                         color="#6366F1"
                     />
                     <StatCard
-                        icon="✅"
+                        icon="checkmark-circle"
                         value={stats?.resolvedReports || 0}
                         label="Reportes resueltos"
                         color="#10B981"
                     />
                     <StatCard
-                        icon="⭐"
+                        icon="star"
                         value={stats?.totalPoints || 0}
                         label="Puntos acumulados"
                         color="#F59E0B"
@@ -170,7 +196,7 @@ export default function StatsScreen({ navigation }: any) {
 
                 {/* Ranking */}
                 <View style={styles.rankingCard}>
-                    <Text style={styles.rankingIcon}>🏆</Text>
+                    <View style={styles.rankingIconCircle}><Ionicons name="trophy" size={28} color="#F59E0B" /></View>
                     <View style={styles.rankingInfo}>
                         <Text style={styles.rankingTitle}>Tu Ranking en Latacunga</Text>
                         <Text style={styles.rankingValue}>
@@ -181,7 +207,10 @@ export default function StatsScreen({ navigation }: any) {
 
                 {/* Tips */}
                 <View style={styles.tipsCard}>
-                    <Text style={styles.tipsTitle}>💡 Sigue mejorando</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name="bulb" size={18} color={colors.neutral[900]} />
+                        <Text style={styles.tipsTitle}>Sigue mejorando</Text>
+                    </View>
                     <Text style={styles.tipsText}>
                         • Reporta contenedores llenos cuando los veas{'\n'}
                         • Comparte la app con amigos para multiplicar el impacto{'\n'}
@@ -191,7 +220,10 @@ export default function StatsScreen({ navigation }: any) {
 
                 {/* Refresh Button */}
                 <TouchableOpacity style={styles.refreshButton} onPress={loadStats}>
-                    <Text style={styles.refreshButtonText}>🔄 Actualizar estadísticas</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <Ionicons name="refresh" size={18} color="#fff" />
+                        <Text style={styles.refreshButtonText}>Actualizar estadísticas</Text>
+                    </View>
                 </TouchableOpacity>
 
                 <View style={{ height: 40 }} />
@@ -314,6 +346,15 @@ const styles = StyleSheet.create({
     },
     rankingIcon: {
         fontSize: 40,
+        marginRight: spacing.md,
+    },
+    rankingIconCircle: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+        justifyContent: 'center' as const,
+        alignItems: 'center' as const,
         marginRight: spacing.md,
     },
     rankingInfo: {

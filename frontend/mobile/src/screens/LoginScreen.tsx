@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -33,9 +34,8 @@ export default function LoginScreen({ navigation }: any) {
     setIsLoading(true);
     try {
       await login({ email, password });
-
-      // Navegar a la app
-      navigation.replace('Tabs');
+      // La navegación a Tabs ocurre automáticamente
+      // cuando isAuthenticated cambia a true en App.tsx
     } catch (error: any) {
       console.error('Error en login:', error);
       Alert.alert(
@@ -60,23 +60,11 @@ export default function LoginScreen({ navigation }: any) {
 
     setIsLoading(true);
     try {
-      // El authService.register ya hace el login automático después del registro
+      // Registrar y luego iniciar sesión
       const { authService } = await import('../services/authService');
-      const response = await authService.register({ email, password, name });
-
-      // Guardar el token y usuario en el contexto
+      await authService.register({ email, password, name });
       await login({ email, password });
-
-      Alert.alert(
-        'Registro exitoso',
-        'Tu cuenta ha sido creada correctamente',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.replace('Tabs'),
-          },
-        ]
-      );
+      // La navegación a Tabs ocurre automáticamente
     } catch (error: any) {
       console.error('Error en registro:', error);
       Alert.alert(
@@ -107,7 +95,7 @@ export default function LoginScreen({ navigation }: any) {
         >
           {/* Logo y título */}
           <View style={styles.header}>
-            <Text style={styles.logo}>♻️</Text>
+            <Ionicons name="leaf" size={64} color={colors.primary[500]} />
             <Text style={styles.title}>Latacunga</Text>
             <Text style={styles.subtitle}>Sistema de Gestión de Residuos</Text>
           </View>

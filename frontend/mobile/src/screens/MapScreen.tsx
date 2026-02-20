@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, Circle, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
@@ -23,16 +24,13 @@ export default function MapScreen({ navigation, route }: any) {
   const [selectedPoint, setSelectedPoint] = useState<CollectionPoint | null>(null);
   const [nearbyPoints, setNearbyPoints] = useState<CollectionPoint[]>([]);
   const [showRoute, setShowRoute] = useState(false);
-  const [routeCoordinates, setRouteCoordinates] = useState<Array<{latitude: number, longitude: number}>>([]);
+  const [routeCoordinates, setRouteCoordinates] = useState<Array<{ latitude: number, longitude: number }>>([]);
   const [routeDistance, setRouteDistance] = useState<string>('');
   const [routeDuration, setRouteDuration] = useState<string>('');
   const [isLoadingRoute, setIsLoadingRoute] = useState(false);
-  const [routeMode, setRouteMode] = useState<'foot' | 'car'>('foot'); // foot-walking o car
+  const [routeMode, setRouteMode] = useState<'foot' | 'car'>('foot');
   const mapRef = useRef<MapView>(null);
 
-  /**
-   * Calcula el tiempo estimado inicial basado en distancia directa
-   */
   const calculateEstimatedTime = (point: CollectionPoint, mode: 'foot' | 'car') => {
     if (!location) return '~5 min';
 
@@ -57,38 +55,31 @@ export default function MapScreen({ navigation, route }: any) {
     setSelectedPoint(point);
     setShowRoute(false);
     setRouteCoordinates([]);
-    // Calcular tiempo estimado cuando se selecciona un punto
     const estimatedTime = calculateEstimatedTime(point, routeMode);
     setRouteDuration(estimatedTime);
   };
 
-  const getRoute = async (start: {latitude: number, longitude: number}, end: {latitude: number, longitude: number}, mode: 'foot' | 'car') => {
+  const getRoute = async (start: { latitude: number, longitude: number }, end: { latitude: number, longitude: number }, mode: 'foot' | 'car') => {
     try {
       setIsLoadingRoute(true);
-      
-      // Para modo a pie: usar perfil 'foot' de OSRM que optimiza para peatones
-      // ignorando sentidos de vías pero siguiendo caminos peatonales
-      // Para vehículo: usar 'driving' que respeta sentidos y reglas de tránsito
+
       const profile = mode === 'foot' ? 'foot' : 'driving';
       const url = `https://router.project-osrm.org/route/v1/${profile}/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=full&geometries=geojson`;
-      
+
       const response = await fetch(url);
       const data = await response.json();
-      
+
       if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
         const route = data.routes[0];
-        
-        // Convertir coordenadas de GeoJSON a formato de React Native Maps
+
         const coordinates = route.geometry.coordinates.map((coord: number[]) => ({
           latitude: coord[1],
           longitude: coord[0]
         }));
-        
+
         setRouteCoordinates(coordinates);
-        // No actualizar distancia y tiempo - mantener los valores estimados originales
         setShowRoute(true);
-        
-        // Ajustar el mapa para mostrar toda la ruta
+
         mapRef.current?.fitToCoordinates(coordinates, {
           edgePadding: {
             top: 100,
@@ -124,9 +115,6 @@ export default function MapScreen({ navigation, route }: any) {
     }
   };
 
-  /**
-   * Cambiar modo de transporte y recalcular tiempo
-   */
   const handleModeChange = (newMode: 'foot' | 'car') => {
     setRouteMode(newMode);
     if (selectedPoint) {
@@ -148,10 +136,8 @@ export default function MapScreen({ navigation, route }: any) {
       });
       if (point) {
         setSelectedPoint(point);
-        // Calcular tiempo estimado
         const estimatedTime = calculateEstimatedTime(point, routeMode);
         setRouteDuration(estimatedTime);
-        // Animar el mapa al punto seleccionado
         mapRef.current?.animateToRegion({
           latitude: point.coordinates.latitude,
           longitude: point.coordinates.longitude,
@@ -163,10 +149,8 @@ export default function MapScreen({ navigation, route }: any) {
   }, [route?.params?.selectedPointId, nearbyPoints]);
 
   useEffect(() => {
-    // Primero mostrar el mapa con ubicación por defecto
     setLoading(false);
-    
-    // Luego obtener ubicación y cargar puntos cercanos en segundo plano
+
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
@@ -175,22 +159,19 @@ export default function MapScreen({ navigation, route }: any) {
           return;
         }
 
-        // Usar ubicación de baja precisión primero para mayor velocidad
         const loc = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
         setLocation(loc);
-        
-        // Cargar puntos cercanos desde la API
+
         const points = await collectionPointService.getNearbyPoints(
           loc.coords.latitude,
           loc.coords.longitude,
-          5 // 5 km de radio
+          5
         );
-        
+
         setNearbyPoints(points);
-        
-        // Animar el mapa a la ubicación del usuario
+
         mapRef.current?.animateToRegion({
           latitude: loc.coords.latitude,
           longitude: loc.coords.longitude,
@@ -253,7 +234,16 @@ export default function MapScreen({ navigation, route }: any) {
               pinColor={point.status === 'FULL' ? colors.error : colors.primary[500]}
             >
               <View style={styles.markerContainer}>
-                <Text style={styles.markerEmoji}>📍</Text>
+                <View style={[
+                  styles.markerIcon,
+                  point.status === 'FULL' && styles.markerIconFull
+                ]}>
+                  <Ionicons
+                    name="location-sharp"
+                    size={24}
+                    color="#fff"
+                  />
+                </View>
               </View>
             </Marker>
           ))}
@@ -271,16 +261,26 @@ export default function MapScreen({ navigation, route }: any) {
           )}
         </MapView>
 
+        {/* Botón "Ver Lista" flotante — esquina superior izquierda */}
+        <TouchableOpacity
+          style={styles.listFloatingButton}
+          onPress={() => navigation.navigate('PointsList')}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="list" size={20} color={colors.primary[700]} />
+          <Text style={styles.listFloatingText}>Ver Lista</Text>
+        </TouchableOpacity>
+
         {/* Panel inferior con información */}
         {selectedPoint && (
           <View style={styles.bottomPanel}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setSelectedPoint(null)}
             >
-              <Text style={styles.closeText}>✕</Text>
+              <Ionicons name="close" size={20} color={colors.text.secondary} />
             </TouchableOpacity>
-            
+
             <View style={styles.pointInfo}>
               <View style={styles.pointHeader}>
                 <Text style={styles.pointLabel}>Punto de Acopio</Text>
@@ -293,10 +293,13 @@ export default function MapScreen({ navigation, route }: any) {
                   </Text>
                 </View>
               </View>
-              
+
               <Text style={styles.pointName}>{selectedPoint.name}</Text>
-              <Text style={styles.pointAddress}>📍 {selectedPoint.address}</Text>
-              
+              <View style={styles.addressRow}>
+                <Ionicons name="location-outline" size={14} color={colors.text.secondary} />
+                <Text style={styles.pointAddress}>{selectedPoint.address}</Text>
+              </View>
+
               {/* Selector de modo de transporte */}
               <View style={styles.transportModeContainer}>
                 <TouchableOpacity
@@ -306,13 +309,17 @@ export default function MapScreen({ navigation, route }: any) {
                   ]}
                   onPress={() => handleModeChange('foot')}
                 >
-                  <Text style={styles.modeEmoji}>🚶</Text>
+                  <Ionicons
+                    name="walk"
+                    size={20}
+                    color={routeMode === 'foot' ? colors.primary[700] : colors.neutral[500]}
+                  />
                   <Text style={[
                     styles.modeText,
                     routeMode === 'foot' && styles.modeTextActive
                   ]}>A pie</Text>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
                   style={[
                     styles.modeButton,
@@ -320,14 +327,18 @@ export default function MapScreen({ navigation, route }: any) {
                   ]}
                   onPress={() => handleModeChange('car')}
                 >
-                  <Text style={styles.modeEmoji}>🚗</Text>
+                  <Ionicons
+                    name="car"
+                    size={20}
+                    color={routeMode === 'car' ? colors.primary[700] : colors.neutral[500]}
+                  />
                   <Text style={[
                     styles.modeText,
                     routeMode === 'car' && styles.modeTextActive
                   ]}>Vehículo</Text>
                 </TouchableOpacity>
               </View>
-              
+
               <View style={styles.pointStats}>
                 <View style={styles.stat}>
                   <Text style={styles.statValue}>{routeDistance || '0.5 km'}</Text>
@@ -341,13 +352,7 @@ export default function MapScreen({ navigation, route }: any) {
             </View>
 
             <View style={styles.buttonRow}>
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.listButton]}
-                onPress={() => navigation.navigate('PointsList')}
-              >
-                <Text style={styles.buttonText}>📋 Ver Lista</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.actionButton, styles.directionsButton, isLoadingRoute && styles.buttonDisabled]}
                 onPress={handleNavigate}
                 disabled={isLoadingRoute}
@@ -355,9 +360,16 @@ export default function MapScreen({ navigation, route }: any) {
                 {isLoadingRoute ? (
                   <ActivityIndicator size="small" color={colors.text.inverse} />
                 ) : (
-                  <Text style={[styles.buttonText, styles.buttonTextWhite]}>
-                    {showRoute ? '✓ Ruta Activa' : '🧭 Navegar'}
-                  </Text>
+                  <View style={styles.navButtonContent}>
+                    <Ionicons
+                      name={showRoute ? 'checkmark-circle' : 'navigate'}
+                      size={20}
+                      color={colors.text.inverse}
+                    />
+                    <Text style={[styles.buttonText, styles.buttonTextWhite]}>
+                      {showRoute ? 'Ruta Activa' : 'Navegar'}
+                    </Text>
+                  </View>
                 )}
               </TouchableOpacity>
             </View>
@@ -390,6 +402,46 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.md,
     color: colors.text.secondary,
   },
+  // Floating "Ver Lista" Button — top-left corner
+  listFloatingButton: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 6,
+    ...shadows.md,
+    elevation: 5,
+  },
+  listFloatingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary[700],
+  },
+  // Markers
+  markerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  markerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary[500],
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    ...shadows.sm,
+  },
+  markerIconFull: {
+    backgroundColor: colors.error,
+  },
+  // Bottom Panel
   bottomPanel: {
     position: 'absolute',
     bottom: 95,
@@ -434,10 +486,16 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     marginBottom: spacing.xs,
   },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: spacing.md,
+  },
   pointAddress: {
     fontSize: typography.fontSize.sm,
     color: colors.text.secondary,
-    marginBottom: spacing.md,
+    flex: 1,
   },
   transportModeContainer: {
     flexDirection: 'row',
@@ -454,14 +512,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral[100],
     borderWidth: 2,
     borderColor: colors.neutral[200],
+    gap: 6,
   },
   modeButtonActive: {
     backgroundColor: colors.primary[50],
     borderColor: colors.primary[500],
-  },
-  modeEmoji: {
-    fontSize: 20,
-    marginRight: spacing.xs,
   },
   modeText: {
     fontSize: typography.fontSize.sm,
@@ -501,11 +556,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...shadows.md,
   },
-  listButton: {
-    backgroundColor: colors.neutral[200],
-  },
   directionsButton: {
     backgroundColor: colors.primary[500],
+  },
+  navButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   buttonText: {
     fontSize: typography.fontSize.md,
@@ -518,13 +575,6 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.6,
   },
-  markerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  markerEmoji: {
-    fontSize: 32,
-  },
   closeButton: {
     position: 'absolute',
     top: spacing.sm,
@@ -536,10 +586,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
-  },
-  closeText: {
-    fontSize: typography.fontSize.lg,
-    color: colors.text.secondary,
-    fontWeight: typography.fontWeight.bold,
   },
 });

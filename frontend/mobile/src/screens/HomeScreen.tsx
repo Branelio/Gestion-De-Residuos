@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,23 +10,34 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
 import { collectionPointService } from '../services/collectionPointService';
 import FeedbackModal from '../components/FeedbackModal';
+// import StatsCard from '../components/StatsCard'; // No existe, usar componentes nativos o crear si es necesario.
+// import CustomMap from '../components/CustomMap';
+import NearbyPointsList from '../components/NearbyPointsList';
 import { FeedbackType } from '../services/feedbackService';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function HomeScreen({ navigation }: any) {
-  const userPoints = 150; // Demo data - en el futuro vendrá de la API de usuarios
-  const userId = '1'; // TODO: Obtener del contexto de autenticación
+  const { user, refreshUser } = useAuth();
+  const userPoints = user?.points || 0;
+  const userId = user?.id || '1';
   const [stats, setStats] = useState({ total: 0, available: 0, full: 0, averageFillPercentage: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
+  // Calcular progreso hacia el siguiente nivel
+  const nextMilestone = userPoints < 50 ? 50 : userPoints < 100 ? 100 : userPoints < 250 ? 250 : userPoints < 500 ? 500 : 1000;
+  const prevMilestone = userPoints < 50 ? 0 : userPoints < 100 ? 50 : userPoints < 250 ? 100 : userPoints < 500 ? 250 : 500;
+  const progressPercent = ((userPoints - prevMilestone) / (nextMilestone - prevMilestone)) * 100;
+
   const loadStats = async () => {
     try {
       const statsData = await collectionPointService.getStats();
-      console.log('📊 Stats data received:', statsData);
       setStats(statsData);
     } catch (error) {
       console.error('Error cargando estadísticas:', error);
@@ -40,9 +51,19 @@ export default function HomeScreen({ navigation }: any) {
     loadStats();
   }, []);
 
-  const onRefresh = () => {
+  // Refrescar datos del usuario cuando la pantalla obtiene foco
+  useFocusEffect(
+    useCallback(() => {
+      refreshUser().catch(() => { });
+    }, [])
+  );
+
+  const onRefresh = async () => {
     setRefreshing(true);
-    loadStats();
+    await Promise.all([
+      loadStats(),
+      refreshUser().catch(() => { }),
+    ]);
   };
 
   if (loading) {
@@ -67,7 +88,7 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <View style={styles.logo}>
-              <Text style={styles.logoText}>🌿</Text>
+              <Ionicons name="leaf" size={28} color="#fff" />
             </View>
             <View>
               <Text style={styles.headerTitle}>Latacunga Limpia</Text>
@@ -78,19 +99,31 @@ export default function HomeScreen({ navigation }: any) {
             style={styles.profileButton}
             onPress={() => navigation.navigate('Profile')}
           >
-            <Text style={styles.profileIcon}>👤</Text>
+            <Ionicons name="person-circle" size={28} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        {/* Tarjeta de puntos */}
+        {/* Tarjeta de puntos con barra de progreso */}
         <View style={styles.pointsCard}>
           <View style={styles.pointsHeader}>
             <Text style={styles.pointsLabel}>Tus Puntos Limpios</Text>
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>🏆 Top 10</Text>
+              <Ionicons name="trophy" size={12} color="#fff" />
+              <Text style={styles.badgeText}> Nivel {userPoints >= 500 ? '8+' : userPoints >= 250 ? '6' : userPoints >= 100 ? '4' : userPoints >= 50 ? '3' : userPoints >= 20 ? '2' : '1'}</Text>
             </View>
           </View>
           <Text style={styles.pointsValue}>{userPoints}</Text>
+
+          {/* Barra de progreso */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${Math.min(progressPercent, 100)}%` }]} />
+            </View>
+            <Text style={styles.progressText}>
+              {userPoints >= 1000 ? '¡Nivel máximo!' : `${nextMilestone - userPoints} pts para siguiente nivel`}
+            </Text>
+          </View>
+
           <Text style={styles.pointsSubtext}>
             {userPoints >= 100 ? '¡Puedes canjear descuentos!' : `${100 - userPoints} puntos para descuento`}
           </Text>
@@ -104,7 +137,7 @@ export default function HomeScreen({ navigation }: any) {
             onPress={() => navigation.navigate('Map')}
           >
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>📍</Text>
+              <Ionicons name="location" size={24} color="#fff" />
             </View>
             <Text style={styles.actionTitle}>Punto Más Cercano</Text>
             <Text style={styles.actionDescription}>
@@ -117,7 +150,7 @@ export default function HomeScreen({ navigation }: any) {
             onPress={() => navigation.navigate('Report')}
           >
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>📸</Text>
+              <Ionicons name="camera" size={24} color="#fff" />
             </View>
             <Text style={styles.actionTitle}>Reportar Residuos</Text>
             <Text style={styles.actionDescription}>
@@ -133,7 +166,7 @@ export default function HomeScreen({ navigation }: any) {
             onPress={() => navigation.navigate('Education')}
           >
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>📚</Text>
+              <Ionicons name="book" size={24} color="#fff" />
             </View>
             <Text style={styles.actionTitle}>Aprende Reciclaje</Text>
             <Text style={styles.actionDescription}>
@@ -146,7 +179,7 @@ export default function HomeScreen({ navigation }: any) {
             onPress={() => navigation.navigate('Gamification')}
           >
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>🏆</Text>
+              <Ionicons name="trophy" size={24} color="#fff" />
             </View>
             <Text style={styles.actionTitle}>Mis Logros</Text>
             <Text style={styles.actionDescription}>
@@ -161,7 +194,7 @@ export default function HomeScreen({ navigation }: any) {
             onPress={() => navigation.navigate('MyRoutes')}
           >
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>🚛</Text>
+              <Ionicons name="bus" size={24} color="#fff" />
             </View>
             <Text style={styles.actionTitle}>Rutas de Recolección</Text>
             <Text style={styles.actionDescription}>
@@ -174,7 +207,7 @@ export default function HomeScreen({ navigation }: any) {
             onPress={() => navigation.navigate('Stats')}
           >
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>📊</Text>
+              <Ionicons name="stats-chart" size={24} color="#fff" />
             </View>
             <Text style={styles.actionTitle}>Mi Impacto</Text>
             <Text style={styles.actionDescription}>
@@ -185,17 +218,68 @@ export default function HomeScreen({ navigation }: any) {
 
         <View style={styles.quickActions}>
           <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: '#EC4899', flex: 1 }]}
+            style={[styles.actionCard, { backgroundColor: '#EC4899' }]}
+            onPress={() => navigation.navigate('MyReports')}
+          >
+            <View style={styles.actionIcon}>
+              <Ionicons name="document-text" size={24} color="#fff" />
+            </View>
+            <Text style={styles.actionTitle}>Mis Reportes</Text>
+            <Text style={styles.actionDescription}>
+              Historial de tus reportes
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: '#EF4444' }]}
             onPress={() => navigation.navigate('Activity')}
           >
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>📜</Text>
+              <Ionicons name="time" size={24} color="#fff" />
             </View>
-            <Text style={styles.actionTitle}>Historial de Actividad</Text>
+            <Text style={styles.actionTitle}>Actividad</Text>
             <Text style={styles.actionDescription}>
-              Revisa tus acciones y puntos ganados
+              Acciones y puntos ganados
             </Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Mapa de Puntos Cercanos */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Puntos Cercanos</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Map')}>
+              <Text style={styles.seeAllText}>Ver Mapa Completo</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* <CustomMap
+            style={styles.mapContainer}
+            initialRegion={{
+                latitude: -0.9346,
+                longitude: -78.6157,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+            }}
+            markers={[
+                {
+                    id: '1',
+                    coordinate: { latitude: -0.9346, longitude: -78.6157 },
+                    title: 'Punto Latacunga Centro',
+                    description: 'Recolección diaria',
+                    pinColor: colors.primary[500]
+                },
+                {
+                    id: '2', 
+                    coordinate: { latitude: -0.9320, longitude: -78.6140 },
+                    title: 'Punto San Felipe',
+                    description: 'Recolección Lun-Mie-Vie',
+                    pinColor: colors.secondary[500]
+                }
+            ]}
+            scrollEnabled={false} // Mapa estático preview
+            zoomEnabled={false}
+          /> */}
         </View>
 
         {/* Estadísticas */}
@@ -219,7 +303,10 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* Información educativa */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>💡 ¿Sabías que?</Text>
+          <View style={styles.infoTitleRow}>
+            <Ionicons name="bulb" size={20} color={colors.primary[600]} />
+            <Text style={styles.infoTitle}>¿Sabías que?</Text>
+          </View>
           <Text style={styles.infoText}>
             Al reportar correctamente los residuos ayudas a optimizar las rutas de recolección,
             reduciendo el consumo de combustible en un 11.6% y las distancias en un 9.4%.
@@ -231,6 +318,9 @@ export default function HomeScreen({ navigation }: any) {
             En colaboración con EPAGAL y el Municipio de Latacunga
           </Text>
         </View>
+
+        {/* Espacio extra para que no quede tapado por el bottom tab */}
+        <View style={{ height: 80 }} />
       </ScrollView>
 
       {/* Botón flotante de feedback */}
@@ -238,7 +328,7 @@ export default function HomeScreen({ navigation }: any) {
         style={styles.feedbackButton}
         onPress={() => setShowFeedbackModal(true)}
       >
-        <Text style={styles.feedbackButtonText}>💬</Text>
+        <Ionicons name="chatbubble-ellipses" size={28} color="#fff" />
       </TouchableOpacity>
 
       {/* Modal de Feedback */}
@@ -274,11 +364,12 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: colors.primary[900],
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl + spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: spacing.xl,
   },
   logoContainer: {
     flexDirection: 'row',
@@ -318,11 +409,12 @@ const styles = StyleSheet.create({
   },
   pointsCard: {
     backgroundColor: colors.surface,
-    margin: spacing.lg,
-    marginTop: -spacing.xl,
+    marginHorizontal: spacing.lg,
+    marginTop: -spacing.lg,
     padding: spacing.lg,
     borderRadius: borderRadius.xl,
     ...shadows.lg,
+    marginBottom: spacing.sm,
   },
   pointsHeader: {
     flexDirection: 'row',
@@ -340,6 +432,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   badgeText: {
     fontSize: typography.fontSize.xs,
@@ -351,13 +445,57 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.bold,
     color: colors.primary[600],
   },
+  progressContainer: {
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: colors.neutral[200],
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary[500],
+    borderRadius: borderRadius.full,
+  },
+  progressText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.text.secondary,
+  },
+  loader: {
+    marginTop: spacing.xl,
+  },
+  mapContainer: {
+    height: 180,
+    marginTop: spacing.sm,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+    ...shadows.sm,
+  },
+  section: {
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  seeAllText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.primary[600],
+    fontWeight: '600',
+  },
   pointsSubtext: {
     fontSize: typography.fontSize.sm,
     color: colors.text.secondary,
   },
   sectionTitle: {
     fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+    fontWeight: 'bold',
     color: colors.text.primary,
     marginHorizontal: spacing.lg,
     marginTop: spacing.lg,
@@ -367,6 +505,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: spacing.lg,
     gap: spacing.md,
+    marginBottom: spacing.md,
   },
   actionCard: {
     flex: 1,
@@ -434,6 +573,12 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: colors.info,
   },
+  infoTitleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    marginBottom: spacing.sm,
+  },
   infoTitle: {
     fontSize: typography.fontSize.md,
     fontWeight: typography.fontWeight.bold,
@@ -456,7 +601,7 @@ const styles = StyleSheet.create({
   },
   feedbackButton: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 100,
     right: 20,
     width: 56,
     height: 56,

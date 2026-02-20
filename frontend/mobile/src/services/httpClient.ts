@@ -1,14 +1,34 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import Constants from 'expo-constants';
 
 /**
- * Configuración base de la API
- * Cambiar BASE_URL en producción
+ * Detecta automáticamente la IP del servidor de desarrollo.
+ * 
+ * En Expo Go, usa el debugger host (misma IP que sirve el bundle JS).
+ * Si hay una URL configurada en app.json → extra.apiUrl, la usa como override.
+ * Fallback: localhost (para builds de producción o emulador).
  */
+function getApiBaseUrl(): string {
+  // 1. Override manual en app.json (si existe y no es la IP vieja hardcodeada)
+  const configuredUrl = Constants.expoConfig?.extra?.apiUrl;
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+
+  // 2. Auto-detectar IP del dev server de Expo
+  const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost;
+  if (debuggerHost) {
+    // debuggerHost viene como "192.168.1.100:8081", extraemos solo la IP
+    const ip = debuggerHost.split(':')[0];
+    return `http://${ip}:3000`;
+  }
+
+  // 3. Fallback para producción
+  return 'http://localhost:3000';
+}
+
 const API_CONFIG = {
-  // Para desarrollo local desde dispositivo físico usa tu IP local
-  // Para emulador Android usa: http://10.0.2.2:3000
-  // Para simulador iOS usa: http://localhost:3000
-  BASE_URL: 'http://10.52.139.50:3000', // IP local para dispositivo físico
+  BASE_URL: getApiBaseUrl(),
   TIMEOUT: 10000, // 10 segundos
 };
 

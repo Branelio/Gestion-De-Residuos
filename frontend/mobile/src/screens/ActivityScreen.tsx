@@ -9,6 +9,7 @@ import {
     FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography, shadows } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -49,7 +50,7 @@ export default function ActivityScreen({ navigation }: any) {
                     description: 'Contenedor desbordado en Av. Amazonas',
                     points: 10,
                     date: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
-                    icon: '📋',
+                    icon: 'document-text',
                     color: '#3B82F6',
                 },
                 {
@@ -59,7 +60,7 @@ export default function ActivityScreen({ navigation }: any) {
                     description: 'Tu reporte fue verificado',
                     points: 5,
                     date: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-                    icon: '⭐',
+                    icon: 'star',
                     color: '#F59E0B',
                 },
                 {
@@ -68,7 +69,7 @@ export default function ActivityScreen({ navigation }: any) {
                     title: 'Nuevo logro',
                     description: 'Obtu viste "Primer Reporte"',
                     date: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-                    icon: '🏆',
+                    icon: 'trophy',
                     color: '#10B981',
                 },
                 {
@@ -77,7 +78,7 @@ export default function ActivityScreen({ navigation }: any) {
                     title: 'Subiste de nivel',
                     description: 'Ahora eres Ciudadano Activo',
                     date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-                    icon: '🚀',
+                    icon: 'rocket',
                     color: '#8B5CF6',
                 },
                 {
@@ -87,7 +88,7 @@ export default function ActivityScreen({ navigation }: any) {
                     description: 'Botadero ilegal cerca del parque',
                     points: 15,
                     date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3 days ago
-                    icon: '📋',
+                    icon: 'document-text',
                     color: '#3B82F6',
                 },
                 {
@@ -97,7 +98,7 @@ export default function ActivityScreen({ navigation }: any) {
                     description: 'Por reportar 3 veces esta semana',
                     points: 20,
                     date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5), // 5 days ago
-                    icon: '🎁',
+                    icon: 'gift',
                     color: '#EC4899',
                 },
             ];
@@ -144,7 +145,9 @@ export default function ActivityScreen({ navigation }: any) {
 
     const ActivityCard = ({ item }: { item: ActivityItem }) => (
         <View style={[styles.activityCard, { borderLeftColor: item.color }]}>
-            <Text style={styles.activityIcon}>{item.icon}</Text>
+            <View style={[styles.activityIconCircle, { backgroundColor: `${item.color}15` }]}>
+                <Ionicons name={item.icon as any} size={22} color={item.color} />
+            </View>
             <View style={styles.activityContent}>
                 <View style={styles.activityHeader}>
                     <Text style={styles.activityTitle}>{item.title}</Text>
@@ -178,9 +181,15 @@ export default function ActivityScreen({ navigation }: any) {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Text style={styles.backButtonText}>← Atrás</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Ionicons name="arrow-back" size={18} color={colors.primary[600]} />
+                        <Text style={styles.backButtonText}>Atrás</Text>
+                    </View>
                 </TouchableOpacity>
-                <Text style={styles.title}>📜 Historial de Actividad</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="time" size={24} color={colors.neutral[900]} />
+                    <Text style={styles.title}>Historial de Actividad</Text>
+                </View>
             </View>
 
             {/* Summary */}
@@ -206,7 +215,7 @@ export default function ActivityScreen({ navigation }: any) {
             {/* Activities List */}
             {filteredActivities.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyIcon}>📭</Text>
+                    <Ionicons name="mail-open" size={48} color={colors.neutral[400]} />
                     <Text style={styles.emptyText}>No hay actividades aún</Text>
                     <Text style={styles.emptySubtext}>
                         Realiza tu primer reporte para comenzar
@@ -326,6 +335,14 @@ const styles = StyleSheet.create({
     },
     activityIcon: {
         fontSize: 28,
+        marginRight: spacing.md,
+    },
+    activityIconCircle: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        justifyContent: 'center' as const,
+        alignItems: 'center' as const,
         marginRight: spacing.md,
     },
     activityContent: {

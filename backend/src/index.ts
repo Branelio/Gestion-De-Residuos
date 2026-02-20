@@ -78,10 +78,12 @@ async function startServer() {
     // Conectar a MongoDB
     await connectDatabase();
 
-    // Iniciar servidor Express
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    // Iniciar servidor Express - 0.0.0.0 para aceptar conexiones desde cualquier dispositivo en la red
+    const HOST = '0.0.0.0';
+    app.listen(Number(PORT), HOST, () => {
+      console.log(`🚀 Server running on http://${HOST}:${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`📱 Accessible from devices on the same network`);
     });
   } catch (error) {
     console.error('❌ Error iniciando servidor:', error);

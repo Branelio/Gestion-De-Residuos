@@ -50,7 +50,7 @@ interface Reward {
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const { user, logout, isAuthenticated } = useAuth();
   const userId = user?.id || ''; // Obtener userId del contexto de autenticación
-  
+
   const [reports, setReports] = useState<Report[]>([]);
   const [realReports, setRealReports] = useState<WasteReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -72,41 +72,40 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     try {
       setIsLoading(true);
       console.log('📥 Cargando reportes del usuario desde API...');
-      
+
       // Intentar cargar reportes, pero continuar si falla (API externa puede no estar disponible)
       const userReports = await wasteReportService.getUserReports(userId);
       setRealReports(userReports);
-      
+
       // Convertir a formato Report para el componente
       const convertedReports: Report[] = userReports.slice(0, 3).map(report => ({
         id: report.id.toString(),
         type: formatReportType(report.type),
         date: formatDateShort(report.createdAt),
         status: mapStatusToReportStatus(report.status),
-        points: calculatePoints(report.severity)
+        points: calculatePoints(report.severity ?? 1)
       }));
       setReports(convertedReports);
-      
+
       // Calcular estadísticas
       const resolved = userReports.filter(r => r.status === 'RESUELTA').length;
       const inProgress = userReports.filter(r => r.status === 'EN_PROCESO').length;
       const pending = userReports.filter(r => r.status === 'PENDIENTE').length;
-      
+
       setStats({
         total: userReports.length,
         resolved,
         inProgress,
         pending
       });
-      
-      // Actualizar puntos del usuario basado en reportes
+
+      // Calcular puntos totales basado en reportes resueltos
       const totalPoints = userReports.reduce((sum, report) => {
-        return sum + (report.status === 'RESUELTA' ? calculatePoints(report.severity) : 0);
+        return sum + (report.status === 'RESUELTA' ? calculatePoints(report.severity ?? 1) : 0);
       }, 0);
-      
-      user.points = totalPoints;
-      user.reportsCount = userReports.length;
-      
+
+      // NOTA: No mutar user directamente — usar stats locales para mostrar datos
+
       console.log('✅ Reportes cargados:', userReports.length);
     } catch (error: any) {
       console.error('❌ Error cargando reportes:', error);
@@ -227,10 +226,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   };
 
   const handleRedeemReward = (reward: Reward) => {
-    if (user.points < reward.pointsCost) {
+    const userPoints = user?.points || 0;
+    if (userPoints < reward.pointsCost) {
       Alert.alert(
         'Puntos Insuficientes',
-        `Necesitas ${reward.pointsCost - user.points} puntos más para canjear esta recompensa.`,
+        `Necesitas ${reward.pointsCost - userPoints} puntos más para canjear esta recompensa.`,
         [{ text: 'OK' }]
       );
       return;
@@ -274,9 +274,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         {
           text: 'Salir',
           style: 'destructive',
-          onPress: () => {
-            // TODO: Implementar logout
-            Alert.alert('Sesión cerrada', 'Has cerrado sesión correctamente');
+          onPress: async () => {
+            await logout();
+            // La navegación a Login ocurre automáticamente
           }
         }
       ]
@@ -285,8 +285,8 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView} 
+      <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -312,7 +312,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             </Text>
             <View style={styles.rankBadge}>
               <Text style={styles.rankText}>
-                ⭐ {user?.role === 'citizen' ? 'Ciudadano Activo' : user?.role === 'operator' ? 'Operador' : 'Administrador'}
+                <Ionicons name="star" size={14} color="#F59E0B" /> {user?.role === 'citizen' ? 'Ciudadano Activo' : user?.role === 'operator' ? 'Operador' : 'Administrador'}
               </Text>
             </View>
           </View>
@@ -349,7 +349,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               <Ionicons name="create-outline" size={20} color={theme.colors.primary[600]} />
               <Text style={styles.editButtonText}>Editar Perfil</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.logoutButton}
               onPress={() => {
@@ -363,7 +363,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                       style: 'destructive',
                       onPress: async () => {
                         await logout();
-                        navigation.replace('Login');
+                        // La navegación a Login ocurre automáticamente
                       },
                     },
                   ]
@@ -379,14 +379,17 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         {/* Recent Reports */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📋 Reportes Recientes</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="document-text" size={18} color={theme.colors.text.primary} />
+              <Text style={styles.sectionTitle}>Reportes Recientes</Text>
+            </View>
             <TouchableOpacity onPress={() => navigation.navigate('MyReports')}>
               <Text style={styles.seeAllText}>Ver Todos</Text>
             </TouchableOpacity>
           </View>
           {isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <ActivityIndicator size="small" color={theme.colors.primary[600]} />
               <Text style={styles.loadingText}>Cargando reportes...</Text>
             </View>
           ) : reports.length === 0 ? (
@@ -394,11 +397,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               <Text style={styles.emptyReportsText}>
                 No tienes reportes aún. ¡Crea tu primer reporte!
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.createReportButton}
                 onPress={() => navigation.navigate('Report')}
               >
-                <Text style={styles.createReportButtonText}>➕ Crear Reporte</Text>
+                <Text style={styles.createReportButtonText}><Ionicons name="add-circle" size={16} color="#fff" /> Crear Reporte</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -426,8 +429,14 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         {/* Rewards Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🎁 Recompensas Disponibles</Text>
-            <Text style={styles.pointsBalance}>💎 {user.points} pts</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="gift" size={18} color={theme.colors.text.primary} />
+              <Text style={styles.sectionTitle}>Recompensas Disponibles</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="diamond" size={14} color={theme.colors.primary[600]} />
+              <Text style={styles.pointsBalance}>{user?.points || 0} pts</Text>
+            </View>
           </View>
           {rewards.map((reward) => (
             <View key={reward.id} style={styles.rewardCard}>
@@ -436,7 +445,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                 <Text style={styles.rewardTitle}>{reward.title}</Text>
                 <Text style={styles.rewardDescription}>{reward.description}</Text>
                 <View style={styles.rewardFooter}>
-                  <Text style={styles.rewardCost}>💎 {reward.pointsCost} puntos</Text>
+                  <Text style={styles.rewardCost}><Ionicons name="diamond" size={12} color={theme.colors.primary[600]} /> {reward.pointsCost} puntos</Text>
                   {!reward.available && (
                     <Text style={styles.unavailableText}>No disponible</Text>
                   )}
@@ -445,15 +454,15 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               <TouchableOpacity
                 style={[
                   styles.redeemButton,
-                  (user.points < reward.pointsCost || !reward.available) && styles.redeemButtonDisabled
+                  ((user?.points || 0) < reward.pointsCost || !reward.available) && styles.redeemButtonDisabled
                 ]}
                 onPress={() => handleRedeemReward(reward)}
-                disabled={user.points < reward.pointsCost || !reward.available}
+                disabled={(user?.points || 0) < reward.pointsCost || !reward.available}
               >
                 <Text
                   style={[
                     styles.redeemButtonText,
-                    (user.points < reward.pointsCost || !reward.available) && styles.redeemButtonTextDisabled
+                    ((user?.points || 0) < reward.pointsCost || !reward.available) && styles.redeemButtonTextDisabled
                   ]}
                 >
                   Canjear
@@ -465,24 +474,27 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
         {/* Impact Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🌍 Tu Impacto Ambiental</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+            <Ionicons name="earth" size={18} color={theme.colors.text.primary} />
+            <Text style={styles.sectionTitle}>Tu Impacto Ambiental</Text>
+          </View>
           <View style={styles.impactCard}>
             <View style={styles.impactRow}>
-              <Text style={styles.impactIcon}>♻️</Text>
+              <View style={styles.impactIconCircle}><Ionicons name="sync-circle" size={24} color={theme.colors.primary[600]} /></View>
               <View style={styles.impactInfo}>
-                <Text style={styles.impactValue}>~{user.reportsCount * 5} kg</Text>
+                <Text style={styles.impactValue}>~{(user?.reportsCount || 0) * 5} kg</Text>
                 <Text style={styles.impactLabel}>Residuos gestionados</Text>
               </View>
             </View>
             <View style={styles.impactRow}>
-              <Text style={styles.impactIcon}>🌳</Text>
+              <View style={styles.impactIconCircle}><Ionicons name="leaf" size={24} color="#10B981" /></View>
               <View style={styles.impactInfo}>
-                <Text style={styles.impactValue}>~{Math.floor(user.reportsCount * 0.3)} kg CO₂</Text>
+                <Text style={styles.impactValue}>~{Math.floor((user?.reportsCount || 0) * 0.3)} kg CO₂</Text>
                 <Text style={styles.impactLabel}>Emisiones evitadas</Text>
               </View>
             </View>
             <View style={styles.impactRow}>
-              <Text style={styles.impactIcon}>👥</Text>
+              <View style={styles.impactIconCircle}><Ionicons name="people" size={24} color="#8B5CF6" /></View>
               <View style={styles.impactInfo}>
                 <Text style={styles.impactValue}>Top 15%</Text>
                 <Text style={styles.impactLabel}>Entre usuarios activos</Text>
@@ -493,29 +505,32 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
         {/* Settings Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⚙️ Configuración</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+            <Ionicons name="settings" size={18} color={theme.colors.text.primary} />
+            <Text style={styles.sectionTitle}>Configuración</Text>
+          </View>
           <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>📝 Editar Perfil</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="create" size={18} color={theme.colors.text.secondary} /><Text style={styles.settingText}>Editar Perfil</Text></View>
             <Text style={styles.settingArrow}>→</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>🔔 Notificaciones</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="notifications" size={18} color={theme.colors.text.secondary} /><Text style={styles.settingText}>Notificaciones</Text></View>
             <Text style={styles.settingArrow}>→</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>🌙 Modo Oscuro</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="moon" size={18} color={theme.colors.text.secondary} /><Text style={styles.settingText}>Modo Oscuro</Text></View>
             <Text style={styles.settingArrow}>→</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>❓ Ayuda y Soporte</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="help-circle" size={18} color={theme.colors.text.secondary} /><Text style={styles.settingText}>Ayuda y Soporte</Text></View>
             <Text style={styles.settingArrow}>→</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>📄 Términos y Condiciones</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="document" size={18} color={theme.colors.text.secondary} /><Text style={styles.settingText}>Términos y Condiciones</Text></View>
             <Text style={styles.settingArrow}>→</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.settingItem, styles.logoutItem]} onPress={handleLogout}>
-            <Text style={styles.logoutText}>🚪 Cerrar Sesión</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="log-out" size={18} color={theme.colors.error} /><Text style={styles.logoutText}>Cerrar Sesión</Text></View>
           </TouchableOpacity>
         </View>
 
@@ -848,6 +863,14 @@ const styles = StyleSheet.create({
   },
   impactIcon: {
     fontSize: 32
+  },
+  impactIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F0F9FF',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   impactInfo: {
     flex: 1
