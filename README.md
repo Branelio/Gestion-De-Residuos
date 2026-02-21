@@ -277,6 +277,42 @@ POST /api/collection-points/nearest
 }
 ```
 
+## 📚 Documentación del Proyecto
+
+### 📖 Historias de Usuario y Requisitos
+El proyecto cuenta con **25 historias de usuario** organizadas en **9 épicas**, totalizando **226 puntos de historia**.
+
+#### Documentos Principales
+- **[📋 Historias de Usuario Completas](docs/USER_STORIES.md)** - Especificaciones detalladas con criterios de aceptación
+- **[✅ Checklist de Seguimiento](docs/USER_STORIES_CHECKLIST.md)** - Control de progreso por sprint
+- **[🎨 Diagrama de Casos de Uso](docs/use-cases-diagram.puml)** - Visualización UML de funcionalidades
+- **[🗺️ Mapa de Historias](docs/user-stories-map.puml)** - Relación entre épicas y actores
+
+#### Resumen de Épicas
+| Épica | Historias | Puntos | Prioridad |
+|-------|-----------|--------|-----------|
+| 1. Autenticación y Perfil | 4 | 16 | 🔴 Alta |
+| 2. Gestión de Reportes | 3 | 26 | 🔴 Crítica |
+| 3. Localización y Navegación | 3 | 24 | 🔴 Crítica |
+| 4. Gamificación y Logros | 4 | 26 | 🟡 Media |
+| 5. Educación Ambiental | 2 | 13 | 🟡 Media |
+| 6. Estadísticas y Actividad | 2 | 13 | 🟢 Baja |
+| 7. Administración Municipal | 3 | 34 | 🟡 Media |
+| 8. Optimización de Rutas | 2 | 21 | 🔴 Crítica |
+| 9. Notificaciones y Feedback | 2 | 13 | 🟢 Baja |
+
+Ver [docs/README.md](docs/README.md) para índice completo de documentación.
+
+### 🏗️ Arquitectura y Diseño
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Arquitectura hexagonal completa
+- **[Diagramas PlantUML](docs/)** - Components, Deployment, Layers, Sequence
+- **[RESUMEN_EJECUTIVO_PROYECTO.md](RESUMEN_EJECUTIVO_PROYECTO.md)** - Estado del proyecto tesis
+
+### 🚀 Guías de Inicio
+- **[QUICKSTART.md](QUICKSTART.md)** - Inicio rápido
+- **[MONGODB_SETUP_GUIDE.md](MONGODB_SETUP_GUIDE.md)** - Configuración de base de datos
+- **[API_EXAMPLES.md](API_EXAMPLES.md)** - Ejemplos de uso de API
+
 ## 🎯 Objetivos del Proyecto
 
 ### Objetivo General

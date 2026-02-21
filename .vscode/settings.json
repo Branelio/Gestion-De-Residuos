@@ -18,6 +18,7 @@
         "/^powershell -Command \"Get-Item 'Tesis_Sistema_Gestion_Residuos_COMPLETA\\.docx' \\| Select-Object Name, Length, LastWriteTime\"$/": {
             "approve": true,
             "matchCommandLine": true
-        }
+        },
+        "git pull": true
     }
 }

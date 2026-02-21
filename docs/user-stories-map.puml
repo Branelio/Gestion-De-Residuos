@@ -1,0 +1,152 @@
+@startuml Mapa de Historias de Usuario por Épica
+
+' Configuración
+skinparam defaultFontSize 12
+skinparam shadowing true
+skinparam backgroundColor #FAFAFA
+
+' ==================== ACTORES ====================
+
+actor "👤 Ciudadano" as citizen #LightBlue
+actor "👨‍💼 Admin Municipal" as admin #LightCoral  
+actor "🚛 Recolector" as collector #LightGreen
+actor "🤖 Sistema IA" as ia #LightGray
+
+' ==================== ÉPICAS ====================
+
+rectangle "ÉPICA 1\n**Autenticación y Perfil**\n(4 historias)" as epic1 #FFF9C4 {
+  card "HU-01: Registro" as hu01 #FFE6E6
+  card "HU-02: Login" as hu02 #FFE6E6
+  card "HU-03: Perfil" as hu03 #FFF4E6
+  card "HU-04: Editar" as hu04 #FFF4E6
+}
+
+rectangle "ÉPICA 2\n**Gestión de Reportes**\n(3 historias)" as epic2 #C8E6C9 {
+  card "HU-05: Crear Reporte" as hu05 #FFE6E6
+  card "HU-06: Mis Reportes" as hu06 #FFF4E6
+  card "HU-07: Verificación IA" as hu07 #E6F3FF
+}
+
+rectangle "ÉPICA 3\n**Localización y Navegación**\n(3 historias)" as epic3 #B3E5FC {
+  card "HU-08: Mapa" as hu08 #FFE6E6
+  card "HU-09: Buscar Cercano" as hu09 #FFF4E6
+  card "HU-10: Navegación" as hu10 #E6F3FF
+}
+
+rectangle "ÉPICA 4\n**Gamificación**\n(4 historias)" as epic4 #F8BBD0 {
+  card "HU-11: Puntos" as hu11 #FFF4E6
+  card "HU-12: Niveles" as hu12 #FFF4E6
+  card "HU-13: Rankings" as hu13 #E6F3FF
+  card "HU-14: Logros" as hu14 #E6F3FF
+}
+
+rectangle "ÉPICA 5\n**Educación Ambiental**\n(2 historias)" as epic5 #D1C4E9 {
+  card "HU-15: Contenido" as hu15 #FFF4E6
+  card "HU-16: Quiz" as hu16 #E6F3FF
+}
+
+rectangle "ÉPICA 6\n**Estadísticas**\n(2 historias)" as epic6 #FFCCBC {
+  card "HU-17: Stats" as hu17 #E6F3FF
+  card "HU-18: Activity Feed" as hu18 #E6F3FF
+}
+
+rectangle "ÉPICA 7\n**Administración**\n(3 historias)" as epic7 #FFAB91 {
+  card "HU-19: Gestionar Puntos" as hu19 #FFF4E6
+  card "HU-20: Gestionar Reportes" as hu20 #FFE6E6
+  card "HU-21: Dashboard" as hu21 #E6F3FF
+}
+
+rectangle "ÉPICA 8\n**Optimización de Rutas**\n(2 historias)" as epic8 #A5D6A7 {
+  card "HU-22: Calcular Ruta" as hu22 #FFE6E6
+  card "HU-23: Ver Rutas" as hu23 #FFF4E6
+}
+
+rectangle "ÉPICA 9\n**Notificaciones**\n(2 historias)" as epic9 #CE93D8 {
+  card "HU-24: Push Notifications" as hu24 #E6F3FF
+  card "HU-25: Feedback" as hu25 #E6F3FF
+}
+
+' ==================== RELACIONES CIUDADANO ====================
+
+citizen -down-> epic1
+citizen -down-> epic2
+citizen -down-> epic3
+citizen -down-> epic4
+citizen -down-> epic5
+citizen -down-> epic6
+citizen -down-> epic9
+
+' ==================== RELACIONES ADMIN ====================
+
+admin -down-> epic7
+admin -down-> epic8
+
+' ==================== RELACIONES RECOLECTOR ====================
+
+collector -down-> epic8
+collector -down-> epic3
+
+' ==================== RELACIONES IA ====================
+
+ia -down-> hu07
+
+' ==================== FLUJOS PRINCIPALES ====================
+
+hu01 ..> hu02 : primer acceso
+hu02 ..> hu03 : ver perfil
+hu05 ..> hu07 : verifica
+hu07 ..> hu11 : otorga puntos
+hu11 ..> hu12 : sube nivel
+hu15 ..> hu16 : completa módulo
+hu16 ..> hu11 : gana puntos
+hu05 ..> hu24 : notifica
+hu20 ..> hu24 : notifica
+
+' ==================== NOTAS ====================
+
+note top of citizen
+  **Usuario Principal**
+  Accede a 7 de 9 épicas
+  20 historias de usuario
+end note
+
+note top of admin
+  **Gestión y Control**
+  Dashboard administrativo
+  5 historias de usuario
+end note
+
+note top of collector
+  **Operaciones**
+  Ejecuta rutas optimizadas
+  2 historias de usuario
+end note
+
+note top of ia
+  **Automatización**
+  Verificación inteligente
+  1 historia de usuario
+end note
+
+' ==================== LEYENDA ====================
+
+legend bottom left
+  **CÓDIGO DE COLORES**
+  |<#FFE6E6> ● | Prioridad CRÍTICA (6) |
+  |<#FFF4E6> ● | Prioridad ALTA (10) |
+  |<#E6F3FF> ● | Prioridad MEDIA (9) |
+  
+  **RESUMEN DEL PROYECTO**
+  • **9 Épicas** organizadas por funcionalidad
+  • **25 Historias de Usuario** totales
+  • **226 Puntos de Historia** estimados
+  • **4 Actores** principales (3 humanos + 1 sistema)
+  
+  **SPRINTS RECOMENDADOS**
+  🏃 Sprint 1-2: Autenticación + Reportes + Mapa (épicas 1-2-3)
+  🏃 Sprint 3-4: Gamificación + Educación (épicas 4-5)
+  🏃 Sprint 5-6: Stats + Admin (épicas 6-7)
+  🏃 Sprint 7-8: Rutas + Notificaciones (épicas 8-9)
+endlegend
+
+@enduml

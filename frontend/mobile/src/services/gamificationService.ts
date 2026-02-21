@@ -7,14 +7,41 @@ import httpClient from './httpClient';
 /**
  * Interface para perfil de gamificación
  */
+export interface Streak {
+    currentStreak: number;
+    longestStreak: number;
+    lastActivityDate: string;
+    isActive: boolean;
+}
+
+export interface Mission {
+    id: string;
+    type: 'daily' | 'weekly' | 'monthly';
+    title: string;
+    description: string;
+    targetValue: number;
+    currentValue: number;
+    reward: number;
+    expiresAt: string;
+    completed: boolean;
+    completedAt?: string;
+}
+
 export interface GamificationProfile {
     userId: string;
     totalPoints: number;
     level: number;
-    badges: string[];
+    levelName: string;
+    badges: Array<{
+        code: string;
+        unlockedAt: string;
+    }>;
     reportsCount: number;
     verifiedReportsCount: number;
     lastReportDate?: string;
+    streak: Streak;
+    missions: Mission[];
+    redeemedRewards: string[];
     progressToNextLevel: number;
     pointsToNextLevel: number;
     canRedeemDiscount: boolean;
@@ -43,7 +70,35 @@ export interface Achievement {
     icon: string;
     pointsRequired: number;
     reportsRequired: number;
-    category: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+    category: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT' | 'SPECIAL';
+    hidden?: boolean;
+    special?: boolean;
+    categoryColor?: string;
+}
+
+/**
+ * Interface para recompensa
+ */
+/**
+ * Interface para recompensa
+ */
+export interface Reward {
+    _id: string;
+    type: 'discount' | 'recognition' | 'raffle' | 'benefit' | 'merchandise';
+    typeName: string;
+    typeIcon: string;
+    title: string;
+    description: string;
+    pointsCost: number;
+    stock: number | null;
+    status: string;
+    available: boolean;
+    expiresAt?: string;
+    expiringSoon: boolean;
+    imageUrl: string;
+    termsAndConditions: string;
+    partner: string | null;
+    metadata: Record<string, any>;
 }
 
 /**
@@ -56,7 +111,50 @@ export interface AwardPointsResult {
     level: number;
     leveledUp: boolean;
     newBadges: string[];
+    streakBonus: number;
+    streakBroken: boolean;
     canRedeemDiscount: boolean;
+}
+
+/**
+ * Interface para misiones del usuario
+ */
+export interface UserMissions {
+    activeMissions: Mission[];
+    completedMissions: Mission[];
+    expiredMissions: Mission[];
+}
+
+/**
+ * Interface para resultado de redención
+ */
+export interface RedeemResult {
+    success: boolean;
+    rewardCode: string;
+    message: string;
+    remainingPoints: number;
+}
+
+/**
+ * Interface para achievements del usuario
+ */
+export interface UserAchievements {
+    unlocked: Achievement[];
+    locked: Achievement[];
+    totalUnlocked: number;
+    totalAvailable: number
+    title: string;
+    description: string;
+    pointsCost: number;
+    stock: number | null;
+    status: string;
+    available: boolean;
+    expiresAt?: string;
+    expiringSoon: boolean;
+    imageUrl: string;
+    termsAndConditions: string;
+    partner: string | null;
+    metadata: Record<string, any>;
 }
 
 class GamificationService {
@@ -184,8 +282,278 @@ class GamificationService {
             INTERMEDIATE: '🌿',
             ADVANCED: '🌳',
             EXPERT: '👑',
+            SPECIAL: '⭐',
         };
         return icons[category] || '⭐';
+    }
+
+    /**
+     * Obtener achievements del usuario (desbloqueados y bloqueados)
+     */
+    async getUserAchievements(userId: string): Promise<UserAchievements> {
+        try {
+            console.log('🎖️ Obteniendo achievements del usuario:', userId);
+
+            const response = await httpClient.get<{ success: boolean; data: UserAchievements }>(
+                `/api/gamification/user/${userId}/achievements`
+            );
+
+            return response as unknown as UserAchievements;
+        } catch (error: any) {
+            console.error('❌ Error obteniendo achievements:', error);
+            throw new Error(
+                error.response?.data?.error ||
+                'Error al obtener los logros del usuario'
+            );
+        }
+    }
+
+    /**
+     * Obtener misiones del usuario
+     */
+    async getUserMissions(userId: string): Promise<UserMissions> {
+        try {
+            console.log('📋 Obteniendo misiones del usuario:', userId);
+
+            const response = await httpClient.get<{ success: boolean; data: UserMissions }>(
+                `/api/gamification/user/${userId}/missions`
+            );
+
+            return response as unknown as UserMissions;
+        } catch (error: any) {
+            console.error('❌ Error obteniendo misiones:', error);
+            throw new Error(
+                error.response?.data?.error ||
+                'Error al obtener las misiones'
+            );
+        }
+    }
+
+    /**
+     * Generar misiones diarias para el usuario
+     */
+    async generateDailyMissions(userId: string): Promise<Mission[]> {
+        try {
+            console.log('🔄 Generando misiones diarias para:', userId);
+
+            const response = await httpClient.post<{ success: boolean; data: Mission[] }>(
+                `/api/gamification/user/${userId}/missions/daily`,
+                {}
+            );
+
+            return response as unknown as Mission[];
+        } catch (error: any) {
+            console.error('❌ Error generando misiones diarias:', error);
+            throw new Error(
+                error.response?.data?.error ||
+                'Error al generar misiones diarias'
+            );
+        }
+    }
+
+    /**
+     * Generar misiones semanales para el usuario
+     */
+    async generateWeeklyMissions(userId: string): Promise<Mission[]> {
+        try {
+            console.log('🔄 Generando misiones semanales para:', userId);
+
+            const response = await httpClient.post<{ success: boolean; data: Mission[] }>(
+                `/api/gamification/user/${userId}/missions/weekly`,
+                {}
+            );
+
+            return response as unknown as Mission[];
+        } catch (error: any) {
+            console.error('❌ Error generando misiones semanales:', error);
+            throw new Error(
+                error.response?.data?.error ||
+                'Error al generar misiones semanales'
+            );
+        }
+    }
+
+    /**
+     * Actualizar progreso de una misión
+     */
+    async updateMissionProgress(
+        userId: string,
+        type: string,
+        value: number
+    ): Promise<{ completedMissions: Mission[]; totalReward: number }> {
+        try {
+            console.log('📊 Actualizando progreso de misión:', type);
+
+            const response = await httpClient.post<{ 
+                success: boolean; 
+                data: { completedMissions: Mission[]; totalReward: number } 
+            }>(
+                `/api/gamification/user/${userId}/missions/update`,
+                { type, value }
+            );
+
+            return response as unknown as { completedMissions: Mission[]; totalReward: number };
+        } catch (error: any) {
+            console.error('❌ Error actualizando misión:', error);
+            throw new Error(
+                error.response?.data?.error ||
+                'Error al actualizar la misión'
+            );
+        }
+    }
+
+    /**
+     * Obtener recompensas disponibles
+     */
+    async getRewards(): Promise<Reward[]> {
+        try {
+            console.log('🎁 Obteniendo recompensas disponibles...');
+
+            const response = await httpClient.get<{ success: boolean; data: Reward[] }>(
+                '/api/gamification/rewards'
+            );
+
+            return response as unknown as Reward[];
+        } catch (error: any) {
+            console.error('❌ Error obteniendo recompensas:', error);
+            throw new Error(
+                error.response?.data?.error ||
+                'Error al obtener las recompensas'
+            );
+        }
+    }
+
+    /**
+     * Redimir una recompensa
+     */
+    async redeemReward(userId: string, rewardId: string): Promise<RedeemResult> {
+        try {
+            console.log('🎁 Redimiendo recompensa:', rewardId);
+
+            const response = await httpClient.post<{ success: boolean; data: RedeemResult }>(
+                '/api/gamification/redeem',
+                { userId, rewardId }
+            );
+
+            return response as unknown as RedeemResult;
+        } catch (error: any) {
+            console.error('❌ Error redimiendo recompensa:', error);
+            throw new Error(
+                error.response?.data?.error ||
+                'Error al redimir la recompensa'
+            );
+        }
+    }
+
+    /**
+     * Obtener historial de recompensas redimidas del usuario
+     */
+    async getUserRewardHistory(userId: string): Promise<any[]> {
+        try {
+            console.log('📜 Obteniendo historial de recompensas:', userId);
+
+            const response = await httpClient.get<{ success: boolean; data: any[] }>(
+                `/api/gamification/user/${userId}/rewards`
+            );
+
+            return response as unknown as any[];
+        } catch (error: any) {
+            console.error('❌ Error obteniendo historial:', error);
+            throw new Error(
+                error.response?.data?.error ||
+                'Error al obtener el historial de recompensas'
+            );
+        }
+    }
+
+    /**
+     * Otorgar puntos a un usuario (usado internamente)
+     */
+    async awardPoints(
+        userId: string,
+        points: number,
+        reason: string
+    ): Promise<AwardPointsResult> {
+        try {
+            console.log(`💎 Otorgando ${points} puntos a ${userId}: ${reason}`);
+
+            const response = await httpClient.post<{ success: boolean; data: AwardPointsResult }>(
+                '/api/gamification/award-points',
+                { userId, points, reason }
+            );
+
+            return response as unknown as AwardPointsResult;
+        } catch (error: any) {
+            console.error('❌ Error otorgando puntos:', error);
+            throw new Error(
+                error.response?.data?.error ||
+                'Error al otorgar puntos'
+            );
+        }
+    }
+
+    /**
+     * Obtener tipo de ícono de recompensa
+     */
+    getRewardTypeIcon(type: string): string {
+        const icons: Record<string, string> = {
+            discount: '🏷️',
+            recognition: '🏆',
+            raffle: '🎟️',
+            benefit: '🎁',
+            merchandise: '👕',
+        };
+        return icons[type] || '🎁';
+    }
+
+    /**
+     * Obtener nombre legible del tipo de recompensa
+     */
+    getRewardTypeName(type: string): string {
+        const names: Record<string, string> = {
+            discount: 'Descuento',
+            recognition: 'Reconocimiento',
+            raffle: 'Sorteo',
+            benefit: 'Beneficio',
+            merchandise: 'Mercancía',
+        };
+        return names[type] || 'Recompensa';
+    }
+
+    /**
+     * Verificar si una recompensa está próxima a expirar (menos de 7 días)
+     */
+    isRewardExpiringSoon(expiresAt?: string): boolean {
+        if (!expiresAt) return false;
+        const now = new Date();
+        const expiration = new Date(expiresAt);
+        const daysUntilExpiration = (expiration.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+        return daysUntilExpiration <= 7 && daysUntilExpiration > 0;
+    }
+
+    /**
+     * Formatear fecha de expiración de misión
+     */
+    formatMissionExpiry(expiresAt: string): string {
+        const now = new Date();
+        const expiry = new Date(expiresAt);
+        const hoursRemaining = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+        if (hoursRemaining < 1) {
+            return 'Expira pronto';
+        } else if (hoursRemaining < 24) {
+            return `${Math.floor(hoursRemaining)}h restantes`;
+        } else {
+            const days = Math.floor(hoursRemaining / 24);
+            return `${days} día${days > 1 ? 's' : ''} restante${days > 1 ? 's' : ''}`;
+        }
+    }
+
+    /**
+     * Calcular porcentaje de progreso de misión
+     */
+    getMissionProgress(mission: Mission): number {
+        return Math.min(100, Math.round((mission.currentValue / mission.targetValue) * 100));
     }
 }
 

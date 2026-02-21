@@ -8,6 +8,7 @@ import { SubmitUserFeedbackUseCase } from '../../../application/use-cases/Submit
 import { MongoUserFeedbackRepository } from '../../repositories/MongoUserFeedbackRepository';
 import authRoutes from './auth';
 import userRoutes from './users';
+import gamificationRoutes from './gamification';
 
 const router = Router();
 
@@ -35,6 +36,14 @@ router.use('/auth', authRoutes);
  * ============================================
  */
 router.use('/users', userRoutes);
+
+/**
+ * ============================================
+ * RUTAS DE GAMIFICACIÓN (MEJORADAS)
+ * Sistema completo de puntos, logros, recompensas y misiones
+ * ============================================
+ */
+router.use('/gamification', gamificationRoutes);
 
 /**
  * ============================================
@@ -648,111 +657,39 @@ router.get(
 
 /**
  * ============================================
- * RUTAS DE GAMIFICACIÓN
+ * RUTAS DE GAMIFICACIÓN (ANTIGUAS - DEPRECADAS)
+ * Las rutas nuevas están en /api/gamification (router.use)
  * ============================================
  */
 
-/**
- * @swagger
- * /api/gamification/profile/{userId}:
- *   get:
- *     summary: Obtener perfil de gamificación del usuario
- *     tags: [Gamification]
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Perfil de gamificación del usuario
- */
+/*
+// Estas rutas han sido reemplazadas por el sistema mejorado de gamificación
+// Ver: backend/src/infrastructure/http/routes/gamification.ts
+
 router.get(
   '/gamification/profile/:userId',
   (req, res) => gamificationController.getProfile(req, res)
 );
 
-/**
- * @swagger
- * /api/gamification/leaderboard:
- *   get:
- *     summary: Obtener top 10 usuarios
- *     tags: [Gamification]
- *     responses:
- *       200:
- *         description: Top 10 usuarios por puntos
- */
 router.get(
   '/gamification/leaderboard',
   (req, res) => gamificationController.getLeaderboard(req, res)
 );
 
-/**
- * @swagger
- * /api/gamification/achievements:
- *   get:
- *     summary: Obtener lista de logros disponibles
- *     tags: [Gamification]
- *     responses:
- *       200:
- *         description: Lista de logros
- */
 router.get(
   '/gamification/achievements',
   (req, res) => gamificationController.getAchievements(req, res)
 );
 
-/**
- * @swagger
- * /api/gamification/award-points:
- *   post:
- *     summary: Otorgar puntos a un usuario
- *     tags: [Gamification]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - userId
- *               - points
- *             properties:
- *               userId:
- *                 type: string
- *               points:
- *                 type: number
- *               reportType:
- *                 type: string
- *     responses:
- *       200:
- *         description: Puntos otorgados exitosamente
- */
 router.post(
   '/gamification/award-points',
   (req, res) => gamificationController.awardPoints(req, res)
 );
 
-/**
- * @swagger
- * /api/gamification/user/{userId}/badges:
- *   get:
- *     summary: Obtener badges del usuario
- *     tags: [Gamification]
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Badges del usuario
- */
 router.get(
   '/gamification/user/:userId/badges',
   (req, res) => gamificationController.getUserBadges(req, res)
 );
+*/
 
 export default router;

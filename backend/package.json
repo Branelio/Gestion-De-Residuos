@@ -15,6 +15,9 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "seed:collection-points": "ts-node src/infrastructure/database/seeds/runSeed.ts",
     "seed:users": "ts-node -r tsconfig-paths/register src/infrastructure/database/seeds/runUsersSeed.ts",
+    "seed:gamification": "ts-node -r tsconfig-paths/register src/infrastructure/database/seeds/runGamificationSeed.ts",
+    "seed:achievements": "ts-node -r tsconfig-paths/register src/infrastructure/database/seeds/achievementsSeed.ts",
+    "seed:rewards": "ts-node -r tsconfig-paths/register src/infrastructure/database/seeds/rewardsSeed.ts",
     "seed:clear": "ts-node src/infrastructure/database/seeds/runSeed.ts --clear",
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
@@ -45,6 +48,7 @@
     "reflect-metadata": "^0.1.13",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "uuid": "^13.0.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
@@ -58,6 +62,7 @@
     "@types/node": "^20.10.5",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
     "eslint": "^8.56.0",

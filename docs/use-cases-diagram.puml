@@ -1,0 +1,251 @@
+@startuml Diagrama de Casos de Uso - Sistema de Gestión de Residuos
+
+' Configuración
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam defaultFontSize 11
+skinparam shadowing false
+
+' Definición de colores por prioridad
+skinparam usecase {
+  BackgroundColor<<critica>> #FFE6E6
+  BorderColor<<critica>> #FF0000
+  BackgroundColor<<alta>> #FFF4E6
+  BorderColor<<alta>> #FFA500
+  BackgroundColor<<media>> #E6F3FF
+  BorderColor<<media>> #0066CC
+}
+
+' ==================== ACTORES ====================
+
+:Ciudadano: as citizen
+:Administrador Municipal: as admin
+:Recolector: as collector
+actor "Sistema IA" as ia <<system>>
+
+' ==================== ÉPICA 1: AUTENTICACIÓN Y PERFIL ====================
+
+package "ÉPICA 1: Autenticación y Perfil" #TECHNOLOGY {
+  usecase "HU-01: Registro de Usuario" as UC01 <<critica>>
+  usecase "HU-02: Inicio de Sesión" as UC02 <<critica>>
+  usecase "HU-03: Visualizar Perfil" as UC03 <<alta>>
+  usecase "HU-04: Editar Perfil" as UC04 <<alta>>
+}
+
+' ==================== ÉPICA 2: GESTIÓN DE REPORTES ====================
+
+package "ÉPICA 2: Gestión de Reportes" #BUSINESS {
+  usecase "HU-05: Crear Reporte\nde Residuo" as UC05 <<critica>>
+  usecase "HU-06: Ver Mis Reportes" as UC06 <<alta>>
+  usecase "HU-07: Verificación\nAutomática por IA" as UC07 <<media>>
+}
+
+' ==================== ÉPICA 3: LOCALIZACIÓN Y NAVEGACIÓN ====================
+
+package "ÉPICA 3: Localización y Navegación" #IMPLEMENTATION {
+  usecase "HU-08: Visualizar Mapa de\nPuntos de Acopio" as UC08 <<critica>>
+  usecase "HU-09: Buscar Punto\nde Acopio Más Cercano" as UC09 <<alta>>
+  usecase "HU-10: Obtener Indicaciones\nde Navegación" as UC10 <<media>>
+}
+
+' ==================== ÉPICA 4: GAMIFICACIÓN ====================
+
+package "ÉPICA 4: Gamificación y Logros" #MOTIVATION {
+  usecase "HU-11: Acumular Puntos\npor Acciones" as UC11 <<alta>>
+  usecase "HU-12: Sistema de Niveles\ny Rangos" as UC12 <<alta>>
+  usecase "HU-13: Ver Rankings y\nLeaderboards" as UC13 <<media>>
+  usecase "HU-14: Desbloquear Logros\ny Badges" as UC14 <<media>>
+}
+
+' ==================== ÉPICA 5: EDUCACIÓN AMBIENTAL ====================
+
+package "ÉPICA 5: Educación Ambiental" #APPLICATION {
+  usecase "HU-15: Acceder a Contenido\nEducativo" as UC15 <<alta>>
+  usecase "HU-16: Tomar Quiz\nEducativo" as UC16 <<media>>
+}
+
+' ==================== ÉPICA 6: ESTADÍSTICAS Y ACTIVIDAD ====================
+
+package "ÉPICA 6: Estadísticas y Actividad" #STRATEGY {
+  usecase "HU-17: Ver Estadísticas\nPersonales" as UC17 <<media>>
+  usecase "HU-18: Ver Feed de\nActividad Reciente" as UC18 <<media>>
+}
+
+' ==================== ÉPICA 7: ADMINISTRACIÓN ====================
+
+package "ÉPICA 7: Administración Municipal" #PHYSICAL {
+  usecase "HU-19: Gestionar Puntos\nde Acopio" as UC19 <<alta>>
+  usecase "HU-20: Revisar y Gestionar\nReportes" as UC20 <<critica>>
+  usecase "HU-21: Ver Dashboard\nde Métricas" as UC21 <<media>>
+}
+
+' ==================== ÉPICA 8: OPTIMIZACIÓN DE RUTAS ====================
+
+package "ÉPICA 8: Optimización de Rutas" #IMPLEMENTATION {
+  usecase "HU-22: Calcular Ruta Óptima\nde Recolección" as UC22 <<critica>>
+  usecase "HU-23: Ver Rutas\nOptimizadas" as UC23 <<alta>>
+}
+
+' ==================== ÉPICA 9: NOTIFICACIONES Y FEEDBACK ====================
+
+package "ÉPICA 9: Notificaciones y Feedback" #APPLICATION {
+  usecase "HU-24: Recibir\nNotificaciones Push" as UC24 <<media>>
+  usecase "HU-25: Enviar Feedback\nal Sistema" as UC25 <<media>>
+}
+
+' ==================== RELACIONES CIUDADANO ====================
+
+' Épica 1
+citizen --> UC01
+citizen --> UC02
+citizen --> UC03
+citizen --> UC04
+
+' Épica 2
+citizen --> UC05
+citizen --> UC06
+
+' Épica 3
+citizen --> UC08
+citizen --> UC09
+citizen --> UC10
+
+' Épica 4
+citizen --> UC11
+citizen --> UC12
+citizen --> UC13
+citizen --> UC14
+
+' Épica 5
+citizen --> UC15
+citizen --> UC16
+
+' Épica 6
+citizen --> UC17
+citizen --> UC18
+
+' Épica 9
+citizen --> UC24
+citizen --> UC25
+
+' ==================== RELACIONES ADMINISTRADOR ====================
+
+' Épica 7
+admin --> UC19
+admin --> UC20
+admin --> UC21
+
+' Épica 8
+admin --> UC22
+admin --> UC23
+
+' El admin también puede ver reportes y estadísticas
+admin --> UC06
+admin --> UC08
+admin --> UC17
+
+' ==================== RELACIONES RECOLECTOR ====================
+
+' Épica 8
+collector --> UC23
+collector --> UC08
+
+' ==================== RELACIONES SISTEMA IA ====================
+
+' Épica 2
+ia --> UC07
+
+' ==================== DEPENDENCIAS E INCLUSIONES ====================
+
+' UC05 incluye obtener ubicación GPS
+UC05 ..> UC08 : <<include>>
+
+' UC07 es disparado automáticamente por UC05
+UC05 ..> UC07 : <<trigger>>
+
+' UC11 es consecuencia de varias acciones
+UC05 ..> UC11 : <<extend>>
+UC15 ..> UC11 : <<extend>>
+UC16 ..> UC11 : <<extend>>
+
+' UC12 depende de UC11
+UC11 ..> UC12 : <<include>>
+
+' UC14 se activa al cumplir condiciones de UC11 y UC12
+UC11 ..> UC14 : <<extend>>
+UC12 ..> UC14 : <<extend>>
+
+' UC10 extiende UC09
+UC09 ..> UC10 : <<extend>>
+
+' UC22 usa UC08 para obtener puntos
+UC22 ..> UC08 : <<include>>
+
+' UC24 se dispara por varios casos de uso
+UC07 ..> UC24 : <<trigger>>
+UC20 ..> UC24 : <<trigger>>
+UC12 ..> UC24 : <<trigger>>
+
+' UC23 muestra resultado de UC22
+UC22 ..> UC23 : <<include>>
+
+' ==================== NOTAS ====================
+
+note right of citizen
+  **Usuario Principal**
+  - Reporta problemas
+  - Busca puntos de acopio
+  - Participa en gamificación
+  - Aprende sobre reciclaje
+end note
+
+note right of admin
+  **Gestión Municipal**
+  - EPAGAL Latacunga
+  - Gestiona infraestructura
+  - Supervisa operaciones
+  - Analiza métricas
+end note
+
+note left of ia
+  **Automatización**
+  - Verifica fotografías
+  - Detecta spam
+  - Otorga puntos
+end note
+
+note bottom of UC05
+  **PRIORIDAD CRÍTICA**
+  Funcionalidad central
+  del sistema
+end note
+
+note bottom of UC22
+  **OPTIMIZACIÓN TSP**
+  Algoritmo de rutas
+  optimizado para reducir
+  distancia y emisiones
+end note
+
+' ==================== LEYENDA ====================
+
+legend right
+  **PRIORIDADES**
+  |<#FFE6E6> CRÍTICA | Funcionalidad esencial |
+  |<#FFF4E6> ALTA | Importante para el sistema |
+  |<#E6F3FF> MEDIA | Mejora la experiencia |
+  
+  **RELACIONES**
+  ---> Asociación
+  ...> <<include>> (siempre se ejecuta)
+  ...> <<extend>> (condicional)
+  ...> <<trigger>> (dispara automáticamente)
+  
+  **ESTADÍSTICAS**
+  • Total: 25 casos de uso
+  • Críticas: 6 historias
+  • Altas: 10 historias
+  • Medias: 9 historias
+endlegend
+
+@enduml

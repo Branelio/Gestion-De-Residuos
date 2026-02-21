@@ -1,16 +1,20 @@
 import { Request, Response } from 'express';
 import { MongoWasteReportRepository } from '../../repositories/MongoWasteReportRepository';
 import { WasteReport, ReportType } from '../../../domain/entities/WasteReport';
-import { GamificationModel } from '../../persistence/GamificationModel';
+import { AwardPointsToUserUseCase } from '../../../application/use-cases/AwardPointsToUser';
+import { MongoGamificationProfileRepository } from '../../repositories/MongoGamificationProfileRepository';
 
 /**
  * Controller para endpoints de reportes de residuos
  */
 export class WasteReportController {
   private repository: MongoWasteReportRepository;
+  private awardPointsUseCase: AwardPointsToUserUseCase;
 
   constructor() {
     this.repository = new MongoWasteReportRepository();
+    const gamificationRepository = new MongoGamificationProfileRepository();
+    this.awardPointsUseCase = new AwardPointsToUserUseCase(gamificationRepository);
   }
 
   /**
@@ -68,65 +72,32 @@ export class WasteReportController {
       // Guardar en la base de datos
       await this.repository.save(report);
 
-      // --- LOGICA GAMIFICACION ---
+      // --- GAMIFICACION: Otorgar puntos por reportar ---
       try {
-        // 10 puntos por reportar
         const POINTS_PER_REPORT = 10;
 
-        // Buscar o crear perfil
-        let profile = await GamificationModel.findOne({ userId });
+        const result = await this.awardPointsUseCase.execute({
+          userId,
+          points: POINTS_PER_REPORT,
+          reason: 'Reporte de residuo creado',
+          verified: false, // Se marca como verified cuando un admin lo verifica
+        });
 
-        if (!profile) {
-          profile = await GamificationModel.create({
-            userId,
-            totalPoints: 0,
-            level: 1,
-            badges: [],
-            reportsCount: 0,
-            verifiedReportsCount: 0,
-          });
+        console.log(`✅ Puntos otorgados a ${userId}: +${POINTS_PER_REPORT} pts`);
+        if (result.leveledUp) {
+          console.log(`🎉 Usuario ${userId} subió a nivel ${result.level}`);
         }
-
-        // Actualizar puntos
-        profile.totalPoints += POINTS_PER_REPORT;
-        profile.reportsCount += 1;
-        profile.lastReportDate = new Date();
-
-        // Calcular nuevo nivel (fórmula simple: cada 100 puntos = 1 nivel, max 10)
-        // O usar la misma lógica que en GamificationController
-        // Niveles: 0-100 (1), 100-200 (2), etc.
-        const calculateLevel = (points: number) => {
-          if (points >= 1000) return 10;
-          if (points >= 750) return 9;
-          if (points >= 500) return 8;
-          if (points >= 350) return 7;
-          if (points >= 250) return 6;
-          if (points >= 150) return 5;
-          if (points >= 100) return 4;
-          if (points >= 50) return 3;
-          if (points >= 20) return 2;
-          return 1;
-        };
-
-        const newLevel = calculateLevel(profile.totalPoints);
-        if (newLevel > profile.level) {
-          profile.level = newLevel;
-          console.log(`🎉 Usuario ${userId} subió de nivel a ${newLevel}`);
+        if (result.newBadges.length > 0) {
+          console.log(`🏅 Nuevos badges desbloqueados: ${result.newBadges.join(', ')}`);
         }
-
-        // Otorgar badge de 'Primer Reporte' si es el primero
-        if (profile.reportsCount === 1 && !profile.badges.includes('FIRST_REPORT')) {
-          profile.badges.push('FIRST_REPORT');
+        if (result.streakBonus > 0) {
+          console.log(`🔥 Bonus por racha: +${result.streakBonus} pts`);
         }
-
-        await profile.save();
-        console.log(`✅ Puntos otorgados a ${userId}: +${POINTS_PER_REPORT} (Total: ${profile.totalPoints})`);
-
       } catch (gamificationError) {
         // No detener la respuesta si falla la gamificación, solo loguear
         console.error('⚠️ Error actualizando gamificación:', gamificationError);
       }
-      // ---------------------------
+      // ---------------------------------------------------
 
       res.status(201).json({
         success: true,

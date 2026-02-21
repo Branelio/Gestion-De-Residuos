@@ -12,6 +12,25 @@ export interface IGamificationDocument extends Omit<Document, '_id'> {
     reportsCount: number;
     verifiedReportsCount: number;
     lastReportDate?: Date;
+    streak: {
+        currentStreak: number;
+        longestStreak: number;
+        lastActivityDate: Date;
+        isActive: boolean;
+    };
+    missions: Array<{
+        id: string;
+        type: 'daily' | 'weekly' | 'monthly';
+        title: string;
+        description: string;
+        targetValue: number;
+        currentValue: number;
+        reward: number;
+        expiresAt: Date;
+        completed: boolean;
+        completedAt?: Date;
+    }>;
+    redeemedRewards: string[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -27,7 +46,9 @@ export interface IAchievementDocument extends Omit<Document, '_id'> {
     icon: string;
     pointsRequired: number;
     reportsRequired: number;
-    category: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+    category: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT' | 'SPECIAL';
+    hidden?: boolean;
+    special?: boolean;
 }
 
 /**
@@ -69,6 +90,46 @@ const gamificationSchema = new Schema<IGamificationDocument>(
         lastReportDate: {
             type: Date,
         },
+        streak: {
+            currentStreak: {
+                type: Number,
+                default: 0,
+            },
+            longestStreak: {
+                type: Number,
+                default: 0,
+            },
+            lastActivityDate: {
+                type: Date,
+                default: Date.now,
+            },
+            isActive: {
+                type: Boolean,
+                default: false,
+            },
+        },
+        missions: {
+            type: [{
+                id: String,
+                type: {
+                    type: String,
+                    enum: ['daily', 'weekly', 'monthly'],
+                },
+                title: String,
+                description: String,
+                targetValue: Number,
+                currentValue: Number,
+                reward: Number,
+                expiresAt: Date,
+                completed: Boolean,
+                completedAt: Date,
+            }],
+            default: [],
+        },
+        redeemedRewards: {
+            type: [String],
+            default: [],
+        },
     },
     {
         timestamps: true,
@@ -106,8 +167,16 @@ const achievementSchema = new Schema<IAchievementDocument>({
     },
     category: {
         type: String,
-        enum: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'],
+        enum: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT', 'SPECIAL'],
         default: 'BEGINNER',
+    },
+    hidden: {
+        type: Boolean,
+        default: false,
+    },
+    special: {
+        type: Boolean,
+        default: false,
     },
 });
 
